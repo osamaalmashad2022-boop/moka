@@ -1,0 +1,17 @@
+# Dependencies & Environment
+node_modules/
+.env
+.env.local
+
+# Agent / IDE config
+.agents/
+.idea/
+.vscode/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Temporary & logs
+*.tmp
+*.log
