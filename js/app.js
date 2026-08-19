@@ -367,6 +367,19 @@ const uiText = {
 };
 
 /**
+ * Sanitize & escape HTML strings defensively (XSS Protection)
+ */
+function escapeHTML(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/**
  * Initialize Application
  */
 document.addEventListener("DOMContentLoaded", () => {
@@ -387,17 +400,20 @@ function renderCategoryNav() {
   if (!navContainer) return;
 
   const isAr = currentLang === "ar";
-  navContainer.innerHTML = menuCategories.map((cat, idx) => `
-    <button type="button" 
-            class="nav-tab ${idx === 0 ? 'active' : ''}" 
-            data-target="${cat.id}"
-            id="tab-${cat.id}"
-            aria-current="${idx === 0 ? 'true' : 'false'}"
-            aria-label="${isAr ? cat.titleAr : cat.titleEn}">
-      <span class="nav-tab-icon">${cat.icon}</span>
-      <span class="nav-tab-text">${isAr ? cat.titleAr : cat.titleEn}</span>
-    </button>
-  `).join("");
+  navContainer.innerHTML = menuCategories.map((cat, idx) => {
+    const title = isAr ? cat.titleAr : cat.titleEn;
+    return `
+      <button type="button" 
+              class="nav-tab ${idx === 0 ? 'active' : ''}" 
+              data-target="${cat.id}"
+              id="tab-${cat.id}"
+              aria-current="${idx === 0 ? 'true' : 'false'}"
+              aria-label="${escapeHTML(title)}">
+        <span class="nav-tab-icon" aria-hidden="true">${cat.icon}</span>
+        <span class="nav-tab-text">${escapeHTML(title)}</span>
+      </button>
+    `;
+  }).join("");
 
   // Attach click events
   navContainer.querySelectorAll(".nav-tab").forEach(tab => {
@@ -459,14 +475,14 @@ function renderMenu() {
     const title = isAr ? cat.titleAr : cat.titleEn;
     const desc = isAr ? cat.descAr : cat.descEn;
 
-    // Optional category hero banner with error fallback
+    // Optional category hero banner with semantic h3 heading
     const heroBannerHtml = cat.heroImage ? `
       <div class="category-hero">
-        <img src="${cat.heroImage}" alt="${title}" class="category-hero-bg" loading="lazy" onerror="this.parentElement.style.display='none'">
+        <img src="${cat.heroImage}" alt="${escapeHTML(title)}" class="category-hero-bg" loading="lazy" onerror="this.parentElement.style.display='none'">
         <div class="category-hero-overlay"></div>
         <div class="category-hero-content">
-          <div class="category-hero-pill">${title}</div>
-          <p class="category-hero-desc">${desc}</p>
+          <h3 class="category-hero-pill">${escapeHTML(title)}</h3>
+          <p class="category-hero-desc">${escapeHTML(desc)}</p>
         </div>
       </div>
     ` : "";
@@ -484,20 +500,20 @@ function renderMenu() {
           <div class="menu-item dual-price-item">
             <div class="item-info">
               <div class="item-header-line">
-                <h4 class="item-name">${name}</h4>
-                ${badge ? `<span class="item-badge">${badge}</span>` : ''}
+                <h4 class="item-name">${escapeHTML(name)}</h4>
+                ${badge ? `<span class="item-badge">${escapeHTML(badge)}</span>` : ''}
               </div>
-              <span class="item-subname">${subName}</span>
-              ${itemDesc ? `<p class="item-description">${itemDesc}</p>` : ''}
+              <span class="item-subname">${escapeHTML(subName)}</span>
+              ${itemDesc ? `<p class="item-description">${escapeHTML(itemDesc)}</p>` : ''}
             </div>
             <div class="dual-prices">
               <div class="price-chip">
-                <span class="chip-qty">${p12Label}</span>
-                <span class="chip-cost">${item.price12} <small>${currency}</small></span>
+                <span class="chip-qty">${escapeHTML(p12Label)}</span>
+                <span class="chip-cost">${item.price12} <small>${escapeHTML(currency)}</small></span>
               </div>
               <div class="price-chip featured-chip">
-                <span class="chip-qty">${p24Label}</span>
-                <span class="chip-cost">${item.price24} <small>${currency}</small></span>
+                <span class="chip-qty">${escapeHTML(p24Label)}</span>
+                <span class="chip-cost">${item.price24} <small>${escapeHTML(currency)}</small></span>
               </div>
             </div>
           </div>
@@ -509,15 +525,15 @@ function renderMenu() {
         <div class="menu-item">
           <div class="item-info">
             <div class="item-header-line">
-              <h4 class="item-name">${name}</h4>
-              ${badge ? `<span class="item-badge">${badge}</span>` : ''}
+              <h4 class="item-name">${escapeHTML(name)}</h4>
+              ${badge ? `<span class="item-badge">${escapeHTML(badge)}</span>` : ''}
             </div>
-            <span class="item-subname">${subName}</span>
-            ${itemDesc ? `<p class="item-description">${itemDesc}</p>` : ''}
+            <span class="item-subname">${escapeHTML(subName)}</span>
+            ${itemDesc ? `<p class="item-description">${escapeHTML(itemDesc)}</p>` : ''}
           </div>
           <div class="item-price">
             <span class="price-val">${item.price}</span>
-            <span class="price-curr">${currency}</span>
+            <span class="price-curr">${escapeHTML(currency)}</span>
           </div>
         </div>
       `;
@@ -528,10 +544,10 @@ function renderMenu() {
         ${heroBannerHtml}
         ${!cat.heroImage ? `
           <div class="section-title-wrap">
-            <div class="section-badge-icon">${cat.icon}</div>
+            <div class="section-badge-icon" aria-hidden="true">${cat.icon}</div>
             <div class="section-title-text">
-              <h3 class="section-title">${title}</h3>
-              <p class="section-desc">${desc}</p>
+              <h3 class="section-title">${escapeHTML(title)}</h3>
+              <p class="section-desc">${escapeHTML(desc)}</p>
             </div>
           </div>
         ` : ''}
@@ -545,15 +561,27 @@ function renderMenu() {
   if (totalVisibleItems === 0) {
     container.innerHTML = `
       <div class="empty-results">
-        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
+        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
-        <p>${isAr ? uiText.ar.noResults : uiText.en.noResults}</p>
+        <p>${isAr ? escapeHTML(uiText.ar.noResults) : escapeHTML(uiText.en.noResults)}</p>
       </div>
     `;
   } else {
     container.innerHTML = sectionsHtml;
+  }
+
+  // Update screen reader live announcer
+  const announcer = document.getElementById("searchAnnouncer");
+  if (announcer) {
+    if (activeSearchQuery) {
+      announcer.textContent = isAr 
+        ? `تم العثور على ${totalVisibleItems} عنصر`
+        : `Found ${totalVisibleItems} items matching search`;
+    } else {
+      announcer.textContent = "";
+    }
   }
 
   // Refresh ScrollSpy observer after DOM injection
@@ -561,7 +589,7 @@ function renderMenu() {
 }
 
 /**
- * Setup Real-time Instant Search
+ * Setup Real-time Instant Search with Escape Key Support
  */
 function initSearch() {
   const searchInput = document.getElementById("menuSearchInput");
@@ -575,6 +603,18 @@ function initSearch() {
       clearBtn.style.display = activeSearchQuery ? "flex" : "none";
     }
     renderMenu();
+  });
+
+  searchInput.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      if (activeSearchQuery || searchInput.value) {
+        searchInput.value = "";
+        activeSearchQuery = "";
+        if (clearBtn) clearBtn.style.display = "none";
+        renderMenu();
+      }
+      searchInput.blur();
+    }
   });
 
   if (clearBtn) {
@@ -688,7 +728,7 @@ function initBackToTop() {
     } else {
       backToTopBtn.classList.remove("visible");
     }
-  });
+  }, { passive: true });
 
   backToTopBtn.addEventListener("click", () => {
     window.scrollTo({

@@ -18,7 +18,7 @@
   
   --text-primary: #F7EFE6;
   --text-secondary: #B3A090;
-  --text-muted: #7E6E60;
+  --text-muted: #9E8D7E; /* WCAG AA compliant contrast (>5:1) */
   
   --border-subtle: rgba(200, 149, 108, 0.14);
   --border-strong: rgba(200, 149, 108, 0.35);
@@ -56,6 +56,46 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+/* Accessible Focus States */
+:focus-visible {
+  outline: 2px solid var(--accent-copper);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Screen Reader Only (WCAG standard utility) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Skip to Content Link */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent-copper);
+  color: #140E0C;
+  font-weight: 700;
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  z-index: 9999;
+  text-decoration: none;
+  transition: top var(--transition-fast);
+}
+
+.skip-link:focus {
+  top: 12px;
 }
 
 html {
@@ -400,20 +440,26 @@ body.ltr-mode .search-input {
 
 .search-clear-btn {
   position: absolute;
-  left: 12px;
+  left: 10px;
   display: none;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--radius-full);
   background: var(--surface-elevated);
   color: var(--text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.search-clear-btn:hover {
+  background: var(--surface-card);
+  color: var(--accent-copper);
 }
 
 body.ltr-mode .search-clear-btn {
   left: auto;
-  right: 12px;
+  right: 10px;
 }
 
 /* ==========================================================================
@@ -927,8 +973,8 @@ body.ltr-mode .section-title-wrap {
   bottom: 20px;
   right: 20px;
   left: auto;
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  height: 46px;
   border-radius: var(--radius-full);
   background: var(--accent-copper);
   color: #140E0C;
@@ -959,3 +1005,21 @@ body.ltr-mode .back-to-top-btn {
   background: var(--accent-copper-hover);
   transform: translateY(-3px) scale(1.05);
 }
+
+/* ==========================================================================
+   Accessibility: Reduced Motion Preference (WCAG 2.3.3)
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+

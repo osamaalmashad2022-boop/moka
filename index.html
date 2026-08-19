@@ -3,16 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data:; script-src 'self' 'unsafe-inline';">
   
   <title>قائمة موكا كافيه | MoKa Cafe Digital Menu</title>
   <meta name="description" content="قائمة طعام ومشروبات موكا كافيه الرقمية — قهوة مختصة، عصائر طبيعية، وافل وحلويات فاخرة.">
   <meta name="theme-color" content="#140E0C">
+  <link rel="canonical" href="./">
+  <link rel="alternate" hreflang="ar" href="./?lang=ar">
+  <link rel="alternate" hreflang="en" href="./?lang=en">
+  <link rel="alternate" hreflang="x-default" href="./">
   
   <!-- Open Graph -->
   <meta property="og:title" content="موكا كافيه | MoKa Cafe">
-  <meta property="og:description" content="قائمة طعام ومشروبات موكا كافيه الرقمية">
+  <meta property="og:description" content="قائمة طعام ومشروبات موكا كافيه الرقمية — قهوة مختصة، عصائر طبيعية، وافل وحلويات فاخرة">
   <meta property="og:image" content="assets/images/logo.jpg">
   <meta property="og:type" content="website">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="موكا كافيه | MoKa Cafe">
+  <meta name="twitter:description" content="قائمة طعام ومشروبات موكا كافيه الرقمية — قهوة مختصة، عصائر طبيعية، وافل وحلويات فاخرة">
+  <meta name="twitter:image" content="assets/images/logo.jpg">
 
   <!-- Favicon -->
   <link rel="icon" type="image/jpeg" href="assets/images/logo.jpg">
@@ -23,10 +34,32 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "CafeOrCoffeeShop",
+    "name": "MoKa Cafe - موكا كافيه",
+    "image": "assets/images/logo.jpg",
+    "description": "قائمة طعام ومشروبات موكا كافيه الرقمية — قهوة مختصة، عصائر طبيعية، وافل وحلويات فاخرة.",
+    "servesCuisine": ["Specialty Coffee", "Desserts", "Fresh Juices", "Waffles"],
+    "priceRange": "$$",
+    "currenciesAccepted": "EGP",
+    "hasMenu": {
+      "@type": "Menu",
+      "name": "MoKa Digital Menu",
+      "inLanguage": ["ar", "en"]
+    }
+  }
+  </script>
+
   <!-- Stylesheet -->
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="rtl-mode">
+
+  <!-- Accessible Skip Link -->
+  <a href="#menuContainer" class="skip-link">تخطي إلى قائمة الطعام / Skip to menu</a>
 
   <div class="app-container">
     
@@ -87,7 +120,7 @@
     <!-- Real-time Instant Search -->
     <section class="search-section">
       <div class="search-input-wrapper">
-        <span class="search-icon">
+        <span class="search-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -100,12 +133,14 @@
                autocomplete="off"
                aria-label="Search Menu">
         <button type="button" class="search-clear-btn" id="searchClearBtn" aria-label="Clear Search">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
       </div>
+      <!-- Screen Reader Live Status Announcer -->
+      <div id="searchAnnouncer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
     </section>
 
     <!-- Sticky Horizontal Category Navigation -->
