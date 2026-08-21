@@ -74,26 +74,50 @@
           </div>
         </div>
 
-        <button type="button" class="lang-btn" id="langToggleBtn" aria-label="Toggle Language">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="2" y1="12" x2="22" y2="12"></line>
-            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-          </svg>
-          <span class="lang-label">English</span>
-        </button>
+        <div class="header-actions">
+          <button type="button" class="theme-toggle-btn" id="themeToggleBtn" aria-label="Toggle Theme" title="Toggle Light/Dark Mode">
+            <svg class="sun-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <svg class="moon-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+
+          <button type="button" class="lang-btn" id="langToggleBtn" aria-label="Toggle Language">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+            <span class="lang-label">English</span>
+          </button>
+        </div>
       </div>
     </header>
 
     <!-- Hero Section -->
     <section class="hero-section">
       <div class="hero-badge">
-        <span>☕</span>
+        <span class="hero-badge-icon">☕</span>
         <span data-i18n="heroBadge">قهوة وحلويات فاخرة</span>
       </div>
-      <h2 class="hero-title" data-i18n="cafeName">موكا كافيه</h2>
+      <h2 class="hero-title" data-i18n="cafeName">MoKa Cafe</h2>
       <p class="hero-subtitle" data-i18n="tagline">قهوة مميزة • عصائر طازجة • وافل وحلويات فاخرة</p>
       
+      <div class="cafe-quick-perks">
+        <span class="perk-chip"><span class="perk-dot"></span> <span data-i18n="openNow">مفتوح الآن</span></span>
+        <span class="perk-chip">💳 <span data-i18n="cashVisa">كاش و فيزا</span></span>
+      </div>
+
       <div class="copper-divider">
         <span class="copper-divider-dot"></span>
       </div>
@@ -101,23 +125,29 @@
 
     <!-- Special Offers Section -->
     <section class="special-offers-section">
-      <div class="special-offer-card">
+      <div class="special-offer-card" id="specialOfferCard">
         <div class="offer-image-wrap">
           <img src="assets/images/special_offers.jpg" alt="MoKa Signature Offer" class="offer-img">
           <div class="offer-badge" data-i18n="specialOfferBadge">عرض خاص</div>
         </div>
         <div class="offer-content">
           <h3 class="offer-title" data-i18n="specialOfferTitle">كومبو موكا المميز</h3>
-          <p class="offer-desc" data-i18n="specialOfferDesc">سبانش لاتيه بارد أو حار + وافل بلجيكي فور سيزون بالنوتيلا واللوتس</p>
+          <p class="offer-desc" data-i18n="specialOfferDesc">سبانش لاتيه بارد أو ساخن + وافل بلجيكي فور سيزون بالنوتيلا واللوتس</p>
           <div class="offer-price-row">
-            <span class="offer-current-price" data-i18n="specialOfferPrice">245 ج.م</span>
-            <span class="offer-original-price" data-i18n="specialOfferOriginal">295 ج.م</span>
+            <div>
+              <span class="offer-current-price" data-i18n="specialOfferPrice">245 ج.م</span>
+              <span class="offer-original-price" data-i18n="specialOfferOriginal">295 ج.م</span>
+            </div>
+            <button type="button" class="offer-add-btn" id="addSpecialOfferBtn" aria-label="Add Special Offer to Order">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span data-i18n="addToOrder">إضافة للطلب</span>
+            </button>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Real-time Instant Search -->
+    <!-- Real-time Instant Search & Quick Tag Filters -->
     <section class="search-section">
       <div class="search-input-wrapper">
         <span class="search-icon" aria-hidden="true">
@@ -139,6 +169,36 @@
           </svg>
         </button>
       </div>
+
+      <!-- Quick Search Suggestion Tags -->
+      <div class="search-suggestions" id="searchSuggestions">
+        <span class="suggestion-label" data-i18n="trendingLabel">الأكثر بحثاً:</span>
+        <button type="button" class="suggestion-tag" data-query="سبانش لاتيه">سبانش لاتيه</button>
+        <button type="button" class="suggestion-tag" data-query="وافل فور سيزون">وافل فور سيزون</button>
+        <button type="button" class="suggestion-tag" data-query="بستاشيو">بستاشيو</button>
+        <button type="button" class="suggestion-tag" data-query="نوتيلا">نوتيلا</button>
+        <button type="button" class="suggestion-tag" data-query="سموزي">سموزي</button>
+      </div>
+
+      <!-- Quick Category / Diet Filter Chips -->
+      <div class="quick-filter-chips" id="quickFilterChips" role="group" aria-label="Quick Filters">
+        <button type="button" class="filter-chip active" data-filter="all">
+          <span data-i18n="filterAll">✨ الكل</span>
+        </button>
+        <button type="button" class="filter-chip" data-filter="bestseller">
+          <span data-i18n="filterBestseller">🔥 الأكثر طلباً</span>
+        </button>
+        <button type="button" class="filter-chip" data-filter="coffee">
+          <span data-i18n="filterCoffee">☕ القهوة والمشروبات الساخنة</span>
+        </button>
+        <button type="button" class="filter-chip" data-filter="cold">
+          <span data-i18n="filterCold">🧊 المثلجات والعصائر</span>
+        </button>
+        <button type="button" class="filter-chip" data-filter="desserts">
+          <span data-i18n="filterDesserts">🧇 الوافل والحلويات</span>
+        </button>
+      </div>
+
       <!-- Screen Reader Live Status Announcer -->
       <div id="searchAnnouncer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
     </section>
@@ -164,12 +224,10 @@
           <p class="footer-tagline" data-i18n="tagline">قهوة مميزة • عصائر طازجة • وافل وحلويات فاخرة</p>
         </div>
 
-
-
         <div class="social-section">
           <div class="social-links-row">
             <!-- Instagram -->
-            <a href="javascript:void(0)" class="social-icon-btn" aria-label="Instagram" title="Instagram">
+            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="social-icon-btn" aria-label="Instagram" title="Instagram">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
                 <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
@@ -178,21 +236,21 @@
             </a>
 
             <!-- Facebook -->
-            <a href="javascript:void(0)" class="social-icon-btn" aria-label="Facebook" title="Facebook">
+            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" class="social-icon-btn" aria-label="Facebook" title="Facebook">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
               </svg>
             </a>
 
             <!-- WhatsApp -->
-            <a href="javascript:void(0)" class="social-icon-btn" aria-label="WhatsApp" title="WhatsApp">
+            <a href="https://wa.me/201000000000" target="_blank" rel="noopener noreferrer" class="social-icon-btn" aria-label="WhatsApp" title="WhatsApp">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
               </svg>
             </a>
 
             <!-- Phone -->
-            <a href="javascript:void(0)" class="social-icon-btn" aria-label="Phone" title="Phone">
+            <a href="tel:+201000000000" class="social-icon-btn" aria-label="Phone" title="Phone">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
               </svg>
@@ -213,6 +271,139 @@
         <polyline points="18 15 12 9 6 15"></polyline>
       </svg>
     </button>
+
+    <!-- Floating Order Summary Bar -->
+    <div class="floating-order-bar" id="floatingOrderBar" aria-live="polite">
+      <div class="order-bar-content">
+        <div class="order-bar-info">
+          <span class="order-bar-badge" id="orderBarCount">0</span>
+          <div class="order-bar-text">
+            <span class="order-bar-label" data-i18n="orderTotalLabel">إجمالي طلبك</span>
+            <span class="order-bar-total" id="orderBarTotal">0 ج.م</span>
+          </div>
+        </div>
+        <button type="button" class="order-bar-btn" id="openOrderDrawerBtn">
+          <span data-i18n="viewOrderBtn">عرض الطلب</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Order Summary Drawer / Modal -->
+    <div class="modal-backdrop" id="orderDrawerBackdrop" aria-hidden="true">
+      <div class="order-drawer" id="orderDrawer" role="dialog" aria-modal="true" aria-labelledby="orderDrawerTitle">
+        <div class="drawer-header">
+          <div class="drawer-title-wrap">
+            <span class="drawer-icon">🛒</span>
+            <h3 id="orderDrawerTitle" data-i18n="orderDrawerTitle">طلبك الحالي</h3>
+          </div>
+          <div class="drawer-actions">
+            <button type="button" class="drawer-clear-btn" id="clearOrderBtn" data-i18n="clearOrderBtn">مسح الكل</button>
+            <button type="button" class="drawer-close-btn" id="closeOrderDrawerBtn" aria-label="Close Order Summary">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="drawer-body" id="orderDrawerItemsList">
+          <!-- Order items rendered dynamically by app.js -->
+        </div>
+
+        <div class="drawer-footer">
+          <div class="drawer-table-input-wrap">
+            <label for="tableNumberInput" class="table-input-label" data-i18n="tableNumLabel">رقم الطاولة / الملاحظات:</label>
+            <input type="text" id="tableNumberInput" class="table-input" placeholder="مثال: طاولة 4، سكر خفيف..." autocomplete="off">
+          </div>
+
+          <div class="drawer-total-row">
+            <span class="drawer-total-label" data-i18n="finalTotalLabel">المجموع الكلي:</span>
+            <span class="drawer-total-amount" id="drawerTotalAmount">0 ج.م</span>
+          </div>
+
+          <div class="drawer-buttons-grid">
+            <button type="button" class="btn-whatsapp-order" id="sendWhatsAppOrderBtn">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+              </svg>
+              <span data-i18n="whatsappOrderBtn">إرسال الطلب عبر واتساب</span>
+            </button>
+
+            <button type="button" class="btn-waiter-show" id="showWaiterCardBtn">
+              <span data-i18n="showWaiterBtn">عرض الكارت للويتر</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Item Customization Modal (Bottom Sheet) -->
+    <div class="modal-backdrop" id="itemCustomModalBackdrop" aria-hidden="true">
+      <div class="item-modal" id="itemCustomModal" role="dialog" aria-modal="true" aria-labelledby="customModalTitle">
+        <div class="item-modal-header">
+          <div class="item-modal-title-wrap">
+            <h3 id="customModalTitle" class="item-modal-name">اسم الصنف</h3>
+            <span id="customModalSubname" class="item-modal-subname">Item Subtitle</span>
+          </div>
+          <button type="button" class="item-modal-close" id="closeCustomModalBtn" aria-label="Close">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="item-modal-body">
+          <p id="customModalDesc" class="item-modal-desc"></p>
+
+          <!-- Size / Portion Selection (for dual priced items) -->
+          <div class="custom-group" id="customSizeGroup" style="display: none;">
+            <label class="custom-group-label" data-i18n="sizeLabel">اختر الحجم / الكمية:</label>
+            <div class="custom-options-row" id="customSizeOptions">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Sugar Level Selection (for coffee & drinks) -->
+          <div class="custom-group" id="customSugarGroup">
+            <label class="custom-group-label" data-i18n="sugarLabel">مستوى السكر:</label>
+            <div class="custom-options-row">
+              <button type="button" class="option-pill active" data-sugar="مضبوط">مضبوط</button>
+              <button type="button" class="option-pill" data-sugar="بدون سكر (سادة)">سادة</button>
+              <button type="button" class="option-pill" data-sugar="سكر خفيف (مانو)">مانو</button>
+              <button type="button" class="option-pill" data-sugar="زيادة">زيادة</button>
+            </div>
+          </div>
+
+          <!-- Notes input -->
+          <div class="custom-group">
+            <label for="customItemNotes" class="custom-group-label" data-i18n="notesLabel">ملاحظات إضافية:</label>
+            <input type="text" id="customItemNotes" class="custom-notes-input" placeholder="مثال: حليب خالي الدسم، ثلج زيادة...">
+          </div>
+
+          <!-- Quantity Selector -->
+          <div class="custom-qty-row">
+            <span class="custom-qty-label" data-i18n="qtyLabel">العدد:</span>
+            <div class="qty-stepper">
+              <button type="button" class="stepper-btn" id="modalQtyMinus" aria-label="Decrease quantity">−</button>
+              <span class="stepper-val" id="modalQtyVal">1</span>
+              <button type="button" class="stepper-btn" id="modalQtyPlus" aria-label="Increase quantity">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="item-modal-footer">
+          <button type="button" class="modal-add-btn" id="confirmAddItemBtn">
+            <span data-i18n="confirmAddBtn">إضافة إلى الطلب</span>
+            <span class="modal-add-price" id="modalAddPrice">0 ج.م</span>
+          </button>
+        </div>
+      </div>
+    </div>
 
   </div>
 
