@@ -12,7 +12,7 @@ const menuCategories = [
       { id: "c2", nameAr: "تركي دبل", nameEn: "Turkish Double", price: 50, type: "coffee" },
       { id: "c3", nameAr: "تركي محوج سنجل", nameEn: "Spiced Turkish Single", price: 50, type: "coffee" },
       { id: "c4", nameAr: "تركي محوج دبل", nameEn: "Spiced Turkish Double", price: 60, type: "coffee" },
-      { id: "c5", nameAr: "قهوة فرنسية", nameEn: "French Coffee", price: 70, type: "coffee" },
+      { id: "c5", nameAr: "قهوة فرنساوي", nameEn: "French Coffee", price: 70, type: "coffee" },
       { id: "c6", nameAr: "قهوة بالبندق", nameEn: "Hazelnut Coffee", price: 80, badgeAr: "مميز", badgeEn: "Special", type: "coffee" },
       { id: "c7", nameAr: "قهوة بالنوتيلا", nameEn: "Nutella Coffee", price: 85, type: "coffee" },
       { id: "c8", nameAr: "إسبريسو سنجل", nameEn: "Espresso Single", price: 50, type: "coffee" },
