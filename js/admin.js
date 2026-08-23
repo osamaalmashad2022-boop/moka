@@ -1,85 +1,69 @@
 // ============================================================================
-// MoKa Cafe — Admin Panel Logic
-// PIN Auth, CRUD for Categories/Items, Firebase Firestore Sync, Cloudinary Uploads
+// MoKa Cafe — Admin Panel Logic (Mobile-First Native App Edition)
+// Bilingual RTL | Firebase Realtime Sync | Touch Keypad | Instant Live Search
 // ============================================================================
 
 import { saveToCloud, fetchFromCloud } from "./firebase-sync.js";
 
 // ============================================================================
-// Default Hardcoded Menu Data (matches app.js)
+// Default Fallback Data
 // ============================================================================
 const DEFAULT_MENU = [
-  {
-    id: "coffee", titleAr: "القهوة", titleEn: "Specialty Coffee",
-    descAr: "قهوة مختارة بعناية ومحضرة بأعلى معايير الإتقان",
-    descEn: "Carefully selected beans brewed to perfection",
-    icon: "coffee", heroImage: "assets/images/coffee.jpg",
-    items: [
-      { id: "c1", nameAr: "تركي سنجل", nameEn: "Turkish Single", price: 40, type: "coffee" },
-      { id: "c2", nameAr: "تركي دبل", nameEn: "Turkish Double", price: 50, type: "coffee" },
-      { id: "c3", nameAr: "تركي محوج سنجل", nameEn: "Spiced Turkish Single", price: 50, type: "coffee" },
-      { id: "c4", nameAr: "تركي محوج دبل", nameEn: "Spiced Turkish Double", price: 60, type: "coffee" },
-      { id: "c5", nameAr: "قهوة فرنساوي", nameEn: "French Coffee", price: 70, type: "coffee" },
-      { id: "c6", nameAr: "قهوة بالبندق", nameEn: "Hazelnut Coffee", price: 80, badgeAr: "مميز", badgeEn: "Special", type: "coffee" },
-      { id: "c7", nameAr: "قهوة بالنوتيلا", nameEn: "Nutella Coffee", price: 85, type: "coffee" },
-      { id: "c8", nameAr: "إسبريسو سنجل", nameEn: "Espresso Single", price: 50, type: "coffee" },
-      { id: "c9", nameAr: "إسبريسو دبل", nameEn: "Espresso Double", price: 70, type: "coffee" },
-      { id: "c10", nameAr: "سبانش لاتيه", nameEn: "Spanish Latte", price: 95, badgeAr: "الأكثر طلباً", badgeEn: "Bestseller", isBestseller: true, type: "coffee" },
-      { id: "c11", nameAr: "لاتيه", nameEn: "Caffè Latte", price: 80, type: "coffee" },
-      { id: "c12", nameAr: "دارك موكا", nameEn: "Dark Mocha", price: 80, type: "coffee" },
-      { id: "c13", nameAr: "كابتشينو كلاسيكي", nameEn: "Classic Cappuccino", price: 80, type: "coffee" },
-      { id: "c14", nameAr: "كابتشينو بالنكهات", nameEn: "Flavored Cappuccino", price: 90, type: "coffee" },
-      { id: "c15", nameAr: "فلات وايت", nameEn: "Flat White", price: 80, type: "coffee" },
-      { id: "c16", nameAr: "ماكياتو", nameEn: "Macchiato", price: 60, type: "coffee" },
-      { id: "c17", nameAr: "لاتيه بالنكهات", nameEn: "Flavored Latte", price: 90, type: "coffee" },
-      { id: "c18", nameAr: "كورتادو", nameEn: "Cortado", price: 80, type: "coffee" },
-      { id: "c19", nameAr: "قهوة أمريكانو", nameEn: "Americano Coffee", price: 65, type: "coffee" },
-      { id: "c20", nameAr: "وايت موكا", nameEn: "White Mocha", price: 85, type: "coffee" }
-    ]
-  },
-  {
-    id: "hot_drinks", titleAr: "المشروبات الساخنة", titleEn: "Hot Beverages",
-    descAr: "مشروبات دافئة ولذيذة لأوقات الاسترخاء والراحة",
-    descEn: "Soothing hot brews and traditional favorites", icon: "hot",
-    items: [
-      { id: "h1", nameAr: "شاي", nameEn: "Tea", price: 25, type: "hot" },
-      { id: "h2", nameAr: "شاي أخضر", nameEn: "Green Tea", price: 30, type: "hot" },
-      { id: "h3", nameAr: "شاي بالنكهات (نعناع / قرنفل)", nameEn: "Mint / Clove Tea", price: 30, type: "hot" },
-      { id: "h4", nameAr: "أعشاب (يانسون - نعناع - كركديه)", nameEn: "Herbal Infusion (Anise / Mint / Hibiscus)", price: 30, type: "hot" },
-      { id: "h5", nameAr: "كوكتيل أعشاب", nameEn: "Mixed Herbal Cocktail", price: 50, type: "hot" },
-      { id: "h6", nameAr: "قرفة بالحليب", nameEn: "Cinnamon with Milk", price: 60, type: "hot" },
-      { id: "h7", nameAr: "شاي لاتيه", nameEn: "Tea Latte", price: 60, type: "hot" },
-      { id: "h8", nameAr: "سحلب بالمكسرات", nameEn: "Sahlab with Nuts", price: 80, badgeAr: "مميز", badgeEn: "Special", isBestseller: true, type: "hot" },
-      { id: "h9", nameAr: "سحلب بالفواكه", nameEn: "Sahlab with Fruits", price: 80, type: "hot" },
-      { id: "h10", nameAr: "هوت شوكليت", nameEn: "Classic Hot Chocolate", price: 100, type: "hot" },
-      { id: "h11", nameAr: "هوت شوكليت بالنوتيلا", nameEn: "Nutella Hot Chocolate", price: 75, type: "hot" },
-      { id: "h12", nameAr: "وايت هوت شوكليت", nameEn: "White Hot Chocolate", price: 85, type: "hot" },
-      { id: "h13", nameAr: "هوت سايدر", nameEn: "Hot Apple Cider", price: 60, type: "hot" },
-      { id: "h14", nameAr: "نسكافيه بلاك", nameEn: "Nescafé Black", price: 70, type: "hot" },
-      { id: "h15", nameAr: "نسكافيه بالحليب", nameEn: "Nescafé with Milk", price: 100, type: "hot" },
-      { id: "h16", nameAr: "بليلة بالمكسرات", nameEn: "Belila with Nuts", price: 60, type: "hot" },
-      { id: "h17", nameAr: "حمص الشام (حلبسة)", nameEn: "Hummus El Sham (Halabessa)", price: 60, type: "hot" }
-    ]
-  },
-  {
-    id: "iced_drinks", titleAr: "مشروبات مثلجة", titleEn: "Iced Drinks",
-    descAr: "انتعاش القهوة والمشروبات الباردة بنكهات استثنائية",
-    descEn: "Chilled specialty coffee and refreshing iced delights", icon: "cold",
-    items: [
-      { id: "i1", nameAr: "آيس موكا", nameEn: "Iced Mocha", price: 90, type: "cold" },
-      { id: "i2", nameAr: "آيس لاتيه", nameEn: "Iced Latte", price: 85, type: "cold" },
-      { id: "i3", nameAr: "آيس لاتيه بالنكهات", nameEn: "Flavored Iced Latte", price: 95, type: "cold" },
-      { id: "i4", nameAr: "آيس كوفي", nameEn: "Iced Coffee", price: 75, type: "cold" },
-      { id: "i5", nameAr: "آيس شوكليت", nameEn: "Iced Chocolate", price: 90, type: "cold" },
-      { id: "i6", nameAr: "آيس أمريكانو", nameEn: "Iced Americano", price: 80, type: "cold" },
-      { id: "i7", nameAr: "وايت آيس موكا", nameEn: "Iced White Mocha", price: 95, type: "cold" },
-      { id: "i8", nameAr: "آيس موكا بستاشيو", nameEn: "Iced Pistachio Mocha", price: 120, badgeAr: "فاخر", badgeEn: "Premium", isBestseller: true, type: "cold" },
-      { id: "i9", nameAr: "آيس سبانش لاتيه", nameEn: "Iced Spanish Latte", price: 110, badgeAr: "الأكثر طلباً", badgeEn: "Bestseller", isBestseller: true, type: "cold" },
-      { id: "i10", nameAr: "آيس لاتيه بالنوتيلا", nameEn: "Nutella Iced Latte", price: 100, type: "cold" },
-      { id: "i11", nameAr: "آيس كراميل ماكياتو", nameEn: "Iced Caramel Macchiato", price: 110, type: "cold" },
-      { id: "i12", nameAr: "بلو آيس سبانش لاتيه", nameEn: "Blue Iced Spanish Latte", price: 120, badgeAr: "توقيع موكا", badgeEn: "MoKa Signature", isBestseller: true, type: "cold" }
-    ]
-  },
+  { id: "coffee", titleAr: "القهوة", titleEn: "Specialty Coffee", descAr: "قهوة مختارة بعناية ومحضرة بأعلى معايير الإتقان", descEn: "Carefully selected beans brewed to perfection", icon: "coffee", heroImage: "assets/images/coffee.jpg", items: [
+    { id: "c1", nameAr: "تركي سنجل", nameEn: "Turkish Single", price: 40, type: "coffee" },
+    { id: "c2", nameAr: "تركي دبل", nameEn: "Turkish Double", price: 50, type: "coffee" },
+    { id: "c3", nameAr: "تركي محوج سنجل", nameEn: "Spiced Turkish Single", price: 50, type: "coffee" },
+    { id: "c4", nameAr: "تركي محوج دبل", nameEn: "Spiced Turkish Double", price: 60, type: "coffee" },
+    { id: "c5", nameAr: "قهوة فرنساوي", nameEn: "French Coffee", price: 70, type: "coffee" },
+    { id: "c6", nameAr: "قهوة بالبندق", nameEn: "Hazelnut Coffee", price: 80, badgeAr: "مميز", badgeEn: "Special", type: "coffee" },
+    { id: "c7", nameAr: "قهوة بالنوتيلا", nameEn: "Nutella Coffee", price: 85, type: "coffee" },
+    { id: "c8", nameAr: "إسبريسو سنجل", nameEn: "Espresso Single", price: 50, type: "coffee" },
+    { id: "c9", nameAr: "إسبريسو دبل", nameEn: "Espresso Double", price: 70, type: "coffee" },
+    { id: "c10", nameAr: "سبانش لاتيه", nameEn: "Spanish Latte", price: 95, badgeAr: "الأكثر طلباً", badgeEn: "Bestseller", isBestseller: true, type: "coffee" },
+    { id: "c11", nameAr: "لاتيه", nameEn: "Caffè Latte", price: 80, type: "coffee" },
+    { id: "c12", nameAr: "دارك موكا", nameEn: "Dark Mocha", price: 80, type: "coffee" },
+    { id: "c13", nameAr: "كابتشينو كلاسيكي", nameEn: "Classic Cappuccino", price: 80, type: "coffee" },
+    { id: "c14", nameAr: "كابتشينو بالنكهات", nameEn: "Flavored Cappuccino", price: 90, type: "coffee" },
+    { id: "c15", nameAr: "فلات وايت", nameEn: "Flat White", price: 80, type: "coffee" },
+    { id: "c16", nameAr: "ماكياتو", nameEn: "Macchiato", price: 60, type: "coffee" },
+    { id: "c17", nameAr: "لاتيه بالنكهات", nameEn: "Flavored Latte", price: 90, type: "coffee" },
+    { id: "c18", nameAr: "كورتادو", nameEn: "Cortado", price: 80, type: "coffee" },
+    { id: "c19", nameAr: "قهوة أمريكانو", nameEn: "Americano Coffee", price: 65, type: "coffee" },
+    { id: "c20", nameAr: "وايت موكا", nameEn: "White Mocha", price: 85, type: "coffee" }
+  ]},
+  { id: "hot_drinks", titleAr: "المشروبات الساخنة", titleEn: "Hot Beverages", descAr: "مشروبات دافئة ولذيذة لأوقات الاسترخاء والراحة", descEn: "Soothing hot brews and traditional favorites", icon: "hot", items: [
+    { id: "h1", nameAr: "شاي", nameEn: "Tea", price: 25, type: "hot" },
+    { id: "h2", nameAr: "شاي أخضر", nameEn: "Green Tea", price: 30, type: "hot" },
+    { id: "h3", nameAr: "شاي بالنكهات (نعناع / قرنفل)", nameEn: "Mint / Clove Tea", price: 30, type: "hot" },
+    { id: "h4", nameAr: "أعشاب (يانسون - نعناع - كركديه)", nameEn: "Herbal Infusion (Anise / Mint / Hibiscus)", price: 30, type: "hot" },
+    { id: "h5", nameAr: "كوكتيل أعشاب", nameEn: "Mixed Herbal Cocktail", price: 50, type: "hot" },
+    { id: "h6", nameAr: "قرفة بالحليب", nameEn: "Cinnamon with Milk", price: 60, type: "hot" },
+    { id: "h7", nameAr: "شاي لاتيه", nameEn: "Tea Latte", price: 60, type: "hot" },
+    { id: "h8", nameAr: "سحلب بالمكسرات", nameEn: "Sahlab with Nuts", price: 80, badgeAr: "مميز", badgeEn: "Special", isBestseller: true, type: "hot" },
+    { id: "h9", nameAr: "سحلب بالفواكه", nameEn: "Sahlab with Fruits", price: 80, type: "hot" },
+    { id: "h10", nameAr: "هوت شوكليت", nameEn: "Classic Hot Chocolate", price: 100, type: "hot" },
+    { id: "h11", nameAr: "هوت شوكليت بالنوتيلا", nameEn: "Nutella Hot Chocolate", price: 75, type: "hot" },
+    { id: "h12", nameAr: "وايت هوت شوكليت", nameEn: "White Hot Chocolate", price: 85, type: "hot" },
+    { id: "h13", nameAr: "هوت سايدر", nameEn: "Hot Apple Cider", price: 60, type: "hot" },
+    { id: "h14", nameAr: "نسكافيه بلاك", nameEn: "Nescafé Black", price: 70, type: "hot" },
+    { id: "h15", nameAr: "نسكافيه بالحليب", nameEn: "Nescafé with Milk", price: 100, type: "hot" },
+    { id: "h16", nameAr: "بليلة بالمكسرات", nameEn: "Belila with Nuts", price: 60, type: "hot" },
+    { id: "h17", nameAr: "حمص الشام (حلبسة)", nameEn: "Hummus El Sham (Halabessa)", price: 60, type: "hot" }
+  ]},
+  { id: "iced_drinks", titleAr: "مشروبات مثلجة", titleEn: "Iced Drinks", descAr: "انتعاش القهوة والمشروبات الباردة بنكهات استثنائية", descEn: "Chilled specialty coffee and refreshing iced delights", icon: "cold", items: [
+    { id: "i1", nameAr: "آيس موكا", nameEn: "Iced Mocha", price: 90, type: "cold" },
+    { id: "i2", nameAr: "آيس لاتيه", nameEn: "Iced Latte", price: 85, type: "cold" },
+    { id: "i3", nameAr: "آيس لاتيه بالنكهات", nameEn: "Flavored Iced Latte", price: 95, type: "cold" },
+    { id: "i4", nameAr: "آيس كوفي", nameEn: "Iced Coffee", price: 75, type: "cold" },
+    { id: "i5", nameAr: "آيس شوكليت", nameEn: "Iced Chocolate", price: 90, type: "cold" },
+    { id: "i6", nameAr: "آيس أمريكانو", nameEn: "Iced Americano", price: 80, type: "cold" },
+    { id: "i7", nameAr: "وايت آيس موكا", nameEn: "Iced White Mocha", price: 95, type: "cold" },
+    { id: "i8", nameAr: "آيس موكا بستاشيو", nameEn: "Iced Pistachio Mocha", price: 120, badgeAr: "فاخر", badgeEn: "Premium", isBestseller: true, type: "cold" },
+    { id: "i9", nameAr: "آيس سبانش لاتيه", nameEn: "Iced Spanish Latte", price: 110, badgeAr: "الأكثر طلباً", badgeEn: "Bestseller", isBestseller: true, type: "cold" },
+    { id: "i10", nameAr: "آيس لاتيه بالنوتيلا", nameEn: "Nutella Iced Latte", price: 100, type: "cold" },
+    { id: "i11", nameAr: "آيس كراميل ماكياتو", nameEn: "Iced Caramel Macchiato", price: 110, type: "cold" },
+    { id: "i12", nameAr: "بلو آيس سبانش لاتيه", nameEn: "Blue Iced Spanish Latte", price: 120, badgeAr: "توقيع موكا", badgeEn: "MoKa Signature", isBestseller: true, type: "cold" }
+  ]},
   { id: "fresh_juices", titleAr: "العصائر الطبيعية", titleEn: "Fresh Juices", descAr: "فواكه طبيعية طازجة ١٠٠٪ محضرة لحظة الطلب", descEn: "100% freshly pressed fruits and natural blends", icon: "juice", heroImage: "assets/images/juices.jpg", items: [
     { id: "j1", nameAr: "مانجو", nameEn: "Fresh Mango", price: 80, badgeAr: "طبيعي", badgeEn: "Fresh", isBestseller: true, type: "cold" },
     { id: "j2", nameAr: "فراولة", nameEn: "Fresh Strawberry", price: 70, type: "cold" },
@@ -117,7 +101,7 @@ const DEFAULT_MENU = [
     { id: "sm10", nameAr: "سموزي أناناس", nameEn: "Pineapple Smoothie", price: 80, type: "cold" },
     { id: "sm11", nameAr: "سموزي كيوي", nameEn: "Kiwi Smoothie", price: 110, type: "cold" }
   ]},
-  { id: "milkshakes", titleAr: "ميلك شيك", titleEn: "Milkshakes", descAr: "شيك كريمي غني بأشهر الشوكولاتة والفواكه اللذيذة", descEn: "Rich, creamy milkshakes loaded with premium flavors", icon: "shake", items: [
+  { id: "milkshakes", titleAr: "ميلك شيك", titleEn: "Milkshakes", descAr: "شيك كريمي غني بأشهر الشوكولاتة والفواكه اللذيذة", descEn: "Rich, creamy milkshakes loaded with premium flavors", icon: "milkshake", items: [
     { id: "ms1", nameAr: "بلوبيري شيك", nameEn: "Blueberry Shake", price: 100, type: "cold" },
     { id: "ms2", nameAr: "كيوي شيك", nameEn: "Kiwi Shake", price: 120, type: "cold" },
     { id: "ms3", nameAr: "فراولة شيك", nameEn: "Strawberry Shake", price: 100, type: "cold" },
@@ -244,9 +228,10 @@ let currentSection = "dashboard";
 let selectedCategoryId = null;
 let itemSearchQuery = "";
 let categorySearchQuery = "";
+let currentPinInput = "";
 
 // ============================================================================
-// Data Persistence (localStorage)
+// Data Persistence (localStorage & Firestore)
 // ============================================================================
 function loadData() {
   try {
@@ -274,18 +259,19 @@ function loadData() {
 function updateCloudBadge(state = "saved") {
   const badge = document.getElementById("cloudStatusBadge");
   if (!badge) return;
+  const textEl = badge.querySelector(".cloud-text");
   if (state === "saving") {
-    badge.innerHTML = "⏳ جاري الحفظ سحابياً...";
+    if (textEl) textEl.textContent = "جاري الحفظ سحابياً...";
     badge.style.color = "#F59E0B";
     badge.style.borderColor = "rgba(245, 158, 11, 0.4)";
     badge.style.background = "rgba(245, 158, 11, 0.15)";
   } else if (state === "saved") {
-    badge.innerHTML = "☁️ متصل بالسحابة (محفوظ)";
+    if (textEl) textEl.textContent = "متصل بالسحابة";
     badge.style.color = "#10B981";
     badge.style.borderColor = "rgba(16, 185, 129, 0.3)";
-    badge.style.background = "rgba(16, 185, 129, 0.15)";
+    badge.style.background = "rgba(16, 185, 129, 0.12)";
   } else if (state === "error") {
-    badge.innerHTML = "⚠️ خطأ في المزامنة";
+    if (textEl) textEl.textContent = "خطأ في المزامنة";
     badge.style.color = "#EF4444";
     badge.style.borderColor = "rgba(239, 68, 68, 0.3)";
     badge.style.background = "rgba(239, 68, 68, 0.15)";
@@ -324,7 +310,7 @@ async function loadCloudDataInitial() {
       }
       renderDashboard();
       if (currentSection === "categories") renderCategories();
-      if (currentSection === "items") renderItems();
+      if (currentSection === "items") renderItemsTable();
       if (currentSection === "offers") renderOfferEditor();
       if (currentSection === "settings") renderSettings();
       updateCloudBadge("saved");
@@ -365,10 +351,11 @@ function generateId() {
 }
 
 // ============================================================================
-// Toast
+// Toast Notification
 // ============================================================================
 function showToast(message, type = "success") {
   const container = document.getElementById("toastContainer");
+  if (!container) return;
   const toast = document.createElement("div");
   toast.className = `toast ${type}`;
   const icons = { success: "✅", error: "❌", info: "ℹ️" };
@@ -381,239 +368,269 @@ function showToast(message, type = "success") {
 }
 
 // ============================================================================
-// Authentication
+// Authentication & Touch Keypad
 // ============================================================================
-function initLogin() {
-  const pins = document.querySelectorAll(".pin-digit");
-  const loginBtn = document.getElementById("loginBtn");
-  const loginError = document.getElementById("loginError");
-
-  pins.forEach((pin, idx) => {
-    pin.addEventListener("input", (e) => {
-      const val = e.target.value.replace(/\D/g, "");
-      e.target.value = val.slice(0, 1);
-      if (val && idx < pins.length - 1) {
-        pins[idx + 1].focus();
-      }
-      loginError.textContent = "";
-      pins.forEach(p => p.classList.remove("error"));
-
-      // Auto submit on last digit
-      const allFilled = Array.from(pins).every(p => p.value.length === 1);
-      if (allFilled) attemptLogin();
-    });
-    pin.addEventListener("keydown", (e) => {
-      if (e.key === "Backspace" && !pin.value && idx > 0) {
-        pins[idx - 1].focus();
-      }
-      if (e.key === "Enter") attemptLogin();
-    });
-    pin.addEventListener("paste", (e) => {
-      e.preventDefault();
-      const pasted = (e.clipboardData.getData("text") || "").replace(/\D/g, "").slice(0, 4);
-      pasted.split("").forEach((ch, i) => { if (pins[i]) pins[i].value = ch; });
-      if (pasted.length === 4) attemptLogin();
-    });
+function updatePinDisplay() {
+  const digits = document.querySelectorAll(".pin-digit");
+  digits.forEach((digit, idx) => {
+    if (idx < currentPinInput.length) {
+      digit.value = "•";
+      digit.classList.add("filled");
+    } else {
+      digit.value = "";
+      digit.classList.remove("filled");
+    }
   });
-
-  if (pins[0]) pins[0].focus();
-  if (loginBtn) loginBtn.addEventListener("click", attemptLogin);
-
-  if (sessionStorage.getItem("moka_admin_auth") === "true") {
-    showAdminPanel();
-  }
 }
 
 function attemptLogin() {
-  const pins = document.querySelectorAll(".pin-digit");
-  const enteredPin = Array.from(pins).map(p => p.value).join("");
   const loginError = document.getElementById("loginError");
+  const digits = document.querySelectorAll(".pin-digit");
+  const correctPin = settingsData.adminPin || "1234";
 
-  if (enteredPin.length < 4) {
-    loginError.textContent = "أدخل الأربعة أرقام كاملة";
-    pins.forEach(p => p.classList.add("error"));
+  if (currentPinInput === correctPin) {
+    sessionStorage.setItem("moka_admin_auth", "true");
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("adminLayout").style.display = "flex";
+    renderDashboard();
+    renderCategories();
+    renderCategoryPills();
+    renderItemsTable();
+    renderOfferEditor();
+    renderSettings();
+  } else {
+    loginError.textContent = "رمز PIN غير صحيح. حاول مجدداً";
+    digits.forEach(p => p.classList.add("error"));
+    currentPinInput = "";
+    setTimeout(() => {
+      digits.forEach(p => {
+        p.classList.remove("error");
+        p.classList.remove("filled");
+        p.value = "";
+      });
+    }, 600);
+  }
+}
+
+function handleKeypadPress(key) {
+  const loginError = document.getElementById("loginError");
+  if (loginError) loginError.textContent = "";
+
+  if (key === "clear") {
+    currentPinInput = "";
+    updatePinDisplay();
     return;
   }
 
-  const correctPin = settingsData.adminPin || "1234";
-  if (enteredPin === correctPin) {
-    sessionStorage.setItem("moka_admin_auth", "true");
-    showAdminPanel();
-  } else {
-    loginError.textContent = "رمز PIN غير صحيح. حاول مرة أخرى.";
-    pins.forEach(p => { p.classList.add("error"); p.value = ""; });
-    pins[0].focus();
+  if (key === "backspace") {
+    currentPinInput = currentPinInput.slice(0, -1);
+    updatePinDisplay();
+    return;
+  }
+
+  if (currentPinInput.length < 4) {
+    currentPinInput += key;
+    updatePinDisplay();
+    if (currentPinInput.length === 4) {
+      setTimeout(() => attemptLogin(), 100);
+    }
   }
 }
 
-function showAdminPanel() {
-  document.getElementById("loginScreen").classList.add("hidden");
-  document.getElementById("adminLayout").classList.add("active");
-  renderDashboard();
-}
+function initLogin() {
+  // Check if already authenticated in session
+  if (sessionStorage.getItem("moka_admin_auth") === "true") {
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("adminLayout").style.display = "flex";
+    return;
+  }
 
-function logout() {
-  sessionStorage.removeItem("moka_admin_auth");
-  location.reload();
+  // Keypad touch listeners
+  const keypad = document.getElementById("pinKeypad");
+  if (keypad) {
+    keypad.querySelectorAll(".keypad-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const key = btn.dataset.key;
+        handleKeypadPress(key);
+      });
+    });
+  }
+
+  // Physical keyboard support for desktop
+  document.addEventListener("keydown", (e) => {
+    const loginScreen = document.getElementById("loginScreen");
+    if (loginScreen && loginScreen.style.display !== "none") {
+      if (/^[0-9]$/.test(e.key)) {
+        handleKeypadPress(e.key);
+      } else if (e.key === "Backspace") {
+        handleKeypadPress("backspace");
+      } else if (e.key === "Escape") {
+        handleKeypadPress("clear");
+      }
+    }
+  });
+
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+      sessionStorage.removeItem("moka_admin_auth");
+      currentPinInput = "";
+      updatePinDisplay();
+      document.getElementById("loginScreen").style.display = "flex";
+      document.getElementById("adminLayout").style.display = "none";
+    });
+  }
 }
 
 // ============================================================================
-// Navigation (Sidebar + Mobile Bottom Nav)
+// Navigation & Section Switching
 // ============================================================================
 function switchSection(section) {
-  const sectionTitles = {
-    dashboard: "الرئيسية",
-    categories: "إدارة الأقسام",
-    items: "إدارة الأصناف",
-    offers: "العروض الخاصة",
-    settings: "الإعدادات",
-    tools: "تصدير واستيراد"
-  };
-
   currentSection = section;
-
-  // Update sidebar active item
-  document.querySelectorAll(".nav-item[data-section]").forEach(n => {
-    n.classList.toggle("active", n.dataset.section === section);
-  });
-
-  // Update mobile bottom nav active button
-  document.querySelectorAll(".mob-nav-btn[data-section]").forEach(b => {
-    b.classList.toggle("active", b.dataset.section === section);
-  });
-
-  // Switch content section
   document.querySelectorAll(".content-section").forEach(s => s.classList.remove("active"));
   const target = document.getElementById(`section-${section}`);
   if (target) target.classList.add("active");
 
-  const headerTitle = document.getElementById("headerTitle");
-  if (headerTitle) headerTitle.textContent = sectionTitles[section] || "";
+  document.querySelectorAll(".nav-item").forEach(item => {
+    item.classList.toggle("active", item.dataset.section === section);
+  });
 
-  // Render section content
+  document.querySelectorAll(".mob-nav-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.section === section);
+  });
+
+  // Update header title
+  const titles = {
+    dashboard: "الرئيسية",
+    categories: "الأقسام",
+    items: "الأصناف",
+    offers: "العروض الخاصة",
+    settings: "الإعدادات",
+    tools: "النسخ الاحتياطي"
+  };
+  const titleEl = document.getElementById("headerTitle");
+  if (titleEl) titleEl.textContent = titles[section] || "لوحة التحكم";
+
+  // Trigger section specific renders
   if (section === "dashboard") renderDashboard();
-  else if (section === "categories") renderCategories();
-  else if (section === "items") renderItems();
-  else if (section === "offers") renderOfferEditor();
-  else if (section === "settings") renderSettings();
+  if (section === "categories") renderCategories();
+  if (section === "items") {
+    renderCategoryPills();
+    renderItemsTable();
+  }
+  if (section === "offers") renderOfferEditor();
+  if (section === "settings") renderSettings();
 
-  closeSidebar();
+  // Scroll to top of content
   window.scrollTo({ top: 0, behavior: "smooth" });
+
+  // Close sidebar on mobile
+  document.getElementById("adminSidebar")?.classList.remove("open");
+  document.getElementById("sidebarOverlay")?.classList.remove("active");
 }
 
 function initNavigation() {
-  // Sidebar items
-  document.querySelectorAll(".nav-item[data-section]").forEach(item => {
+  document.querySelectorAll(".nav-item").forEach(item => {
     item.addEventListener("click", () => switchSection(item.dataset.section));
   });
 
-  // Mobile bottom nav items
-  document.querySelectorAll(".mob-nav-btn[data-section]").forEach(btn => {
+  document.querySelectorAll(".mob-nav-btn").forEach(btn => {
     btn.addEventListener("click", () => switchSection(btn.dataset.section));
   });
 
-  // Stat cards jump clicks
-  document.querySelectorAll(".stat-card[data-jump-section]").forEach(card => {
-    card.addEventListener("click", () => switchSection(card.dataset.jumpSection));
+  // Jump handlers for stat cards
+  document.querySelectorAll("[data-jump-section]").forEach(el => {
+    el.addEventListener("click", () => switchSection(el.dataset.jumpSection));
   });
 
-  // Quick Action Buttons
-  const quickAddItemBtn = document.getElementById("quickAddItemBtn");
-  if (quickAddItemBtn) {
-    quickAddItemBtn.addEventListener("click", () => {
-      switchSection("items");
-      const activeCat = selectedCategoryId || menuData[0]?.id;
-      if (activeCat) openItemModal(activeCat);
+  // Mobile Hamburger Toggle
+  const toggleBtn = document.getElementById("menuToggleBtn");
+  const sidebar = document.getElementById("adminSidebar");
+  const overlay = document.getElementById("sidebarOverlay");
+
+  if (toggleBtn && sidebar && overlay) {
+    toggleBtn.addEventListener("click", () => {
+      sidebar.classList.toggle("open");
+      overlay.classList.toggle("active");
+    });
+    overlay.addEventListener("click", () => {
+      sidebar.classList.remove("open");
+      overlay.classList.remove("active");
     });
   }
 
-  const quickAddCatBtn = document.getElementById("quickAddCatBtn");
-  if (quickAddCatBtn) {
-    quickAddCatBtn.addEventListener("click", () => {
-      switchSection("categories");
-      openCategoryModal();
-    });
-  }
+  // Dashboard Quick Action Buttons
+  document.getElementById("quickAddItemBtn")?.addEventListener("click", () => {
+    switchSection("items");
+    setTimeout(() => {
+      const catId = selectedCategoryId || menuData[0]?.id;
+      if (catId) openItemModal(catId);
+    }, 150);
+  });
 
-  // Mobile FAB Button
-  const fabBtn = document.getElementById("mobileFabBtn");
-  if (fabBtn) {
-    fabBtn.addEventListener("click", () => {
+  document.getElementById("quickAddCatBtn")?.addEventListener("click", () => {
+    switchSection("categories");
+    setTimeout(() => openCategoryModal(), 150);
+  });
+
+  // Mobile Floating Action Button (FAB)
+  const fab = document.getElementById("mobileFabBtn");
+  if (fab) {
+    fab.addEventListener("click", () => {
       if (currentSection === "categories") {
         openCategoryModal();
       } else {
         const catId = selectedCategoryId || menuData[0]?.id;
-        if (catId) openItemModal(catId);
-        else openCategoryModal();
+        if (!catId) {
+          showToast("يرجى إضافة قسم أولاً", "error");
+          openCategoryModal();
+          return;
+        }
+        openItemModal(catId);
       }
     });
   }
 
-  // Mobile sidebar toggle
-  const toggleBtn = document.getElementById("menuToggleBtn");
-  if (toggleBtn) {
-    toggleBtn.addEventListener("click", () => {
-      document.getElementById("adminSidebar").classList.toggle("open");
-      document.getElementById("sidebarOverlay").classList.toggle("active");
-    });
-  }
-
-  const overlay = document.getElementById("sidebarOverlay");
-  if (overlay) overlay.addEventListener("click", closeSidebar);
-  
-  const logoutBtn = document.getElementById("logoutBtn");
-  if (logoutBtn) logoutBtn.addEventListener("click", logout);
-
-  // Search filters
-  initSearchFilters();
+  // Live Search Handlers
+  initSearchHandlers();
 }
 
-function closeSidebar() {
-  const sidebar = document.getElementById("adminSidebar");
-  const overlay = document.getElementById("sidebarOverlay");
-  if (sidebar) sidebar.classList.remove("open");
-  if (overlay) overlay.classList.remove("active");
-}
-
-// ============================================================================
-// Search Filters (Items & Categories)
-// ============================================================================
-function initSearchFilters() {
-  const itemSearchInput = document.getElementById("itemSearchInput");
-  const clearItemSearch = document.getElementById("clearItemSearch");
-  if (itemSearchInput) {
-    itemSearchInput.addEventListener("input", (e) => {
+function initSearchHandlers() {
+  // Items Search
+  const itemSearch = document.getElementById("itemSearchInput");
+  const clearItemBtn = document.getElementById("clearItemSearch");
+  if (itemSearch) {
+    itemSearch.addEventListener("input", (e) => {
       itemSearchQuery = e.target.value.trim().toLowerCase();
-      if (clearItemSearch) clearItemSearch.style.display = itemSearchQuery ? "flex" : "none";
+      if (clearItemBtn) clearItemBtn.style.display = itemSearchQuery ? "flex" : "none";
       renderItemsTable();
     });
   }
-  if (clearItemSearch) {
-    clearItemSearch.addEventListener("click", () => {
-      itemSearchInput.value = "";
+  if (clearItemBtn) {
+    clearItemBtn.addEventListener("click", () => {
+      if (itemSearch) itemSearch.value = "";
       itemSearchQuery = "";
-      clearItemSearch.style.display = "none";
+      clearItemBtn.style.display = "none";
       renderItemsTable();
-      itemSearchInput.focus();
     });
   }
 
-  const catSearchInput = document.getElementById("categorySearchInput");
-  const clearCatSearch = document.getElementById("clearCategorySearch");
-  if (catSearchInput) {
-    catSearchInput.addEventListener("input", (e) => {
+  // Categories Search
+  const catSearch = document.getElementById("categorySearchInput");
+  const clearCatBtn = document.getElementById("clearCategorySearch");
+  if (catSearch) {
+    catSearch.addEventListener("input", (e) => {
       categorySearchQuery = e.target.value.trim().toLowerCase();
-      if (clearCatSearch) clearCatSearch.style.display = categorySearchQuery ? "flex" : "none";
+      if (clearCatBtn) clearCatBtn.style.display = categorySearchQuery ? "flex" : "none";
       renderCategories();
     });
   }
-  if (clearCatSearch) {
-    clearCatSearch.addEventListener("click", () => {
-      catSearchInput.value = "";
+  if (clearCatBtn) {
+    clearCatBtn.addEventListener("click", () => {
+      if (catSearch) catSearch.value = "";
       categorySearchQuery = "";
-      clearCatSearch.style.display = "none";
+      clearCatBtn.style.display = "none";
       renderCategories();
-      catSearchInput.focus();
     });
   }
 }
@@ -622,69 +639,88 @@ function initSearchFilters() {
 // Dashboard
 // ============================================================================
 function renderDashboard() {
-  const totalItems = menuData.reduce((sum, cat) => sum + cat.items.length, 0);
-  const totalBestsellers = menuData.reduce((sum, cat) => sum + cat.items.filter(i => i.isBestseller).length, 0);
-  document.getElementById("statCategories").textContent = menuData.length;
-  document.getElementById("statItems").textContent = totalItems;
-  document.getElementById("statBestsellers").textContent = totalBestsellers;
+  const totalCategories = menuData.length;
+  let totalItems = 0;
+  let bestsellers = 0;
 
-  const lastEdit = localStorage.getItem("moka_last_edit");
-  if (lastEdit) {
-    const d = new Date(lastEdit);
-    document.getElementById("statLastEdit").textContent = d.toLocaleDateString("ar-EG", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  menuData.forEach(cat => {
+    if (Array.isArray(cat.items)) {
+      totalItems += cat.items.length;
+      bestsellers += cat.items.filter(i => i.isBestseller).length;
+    }
+  });
+
+  const statCats = document.getElementById("statCategories");
+  const statIts = document.getElementById("statItems");
+  const statBests = document.getElementById("statBestsellers");
+  const statLast = document.getElementById("statLastEdit");
+
+  if (statCats) statCats.textContent = totalCategories;
+  if (statIts) statIts.textContent = totalItems;
+  if (statBests) statBests.textContent = bestsellers;
+
+  if (statLast) {
+    const lastEdit = localStorage.getItem("moka_last_edit");
+    if (lastEdit) {
+      const d = new Date(lastEdit);
+      statLast.textContent = d.toLocaleDateString("ar-EG", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    } else {
+      statLast.textContent = "الآن";
+    }
   }
 }
 
 // ============================================================================
-// Categories CRUD (Adaptive Mobile Cards + Actions)
+// Categories CRUD & Cards
 // ============================================================================
 function renderCategories() {
   const wrap = document.getElementById("categoriesTableWrap");
-  if (menuData.length === 0) {
-    wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">📁</div><p>لا توجد أقسام بعد. اضغط "إضافة قسم جديد" للبدء.</p></div>`;
-    return;
-  }
+  if (!wrap) return;
 
-  let filtered = menuData;
-  if (categorySearchQuery) {
-    filtered = menuData.filter(c => 
-      c.titleAr.toLowerCase().includes(categorySearchQuery) || 
-      c.titleEn.toLowerCase().includes(categorySearchQuery) ||
-      (c.descAr && c.descAr.toLowerCase().includes(categorySearchQuery)) ||
-      (c.descEn && c.descEn.toLowerCase().includes(categorySearchQuery))
-    );
-  }
+  const filtered = menuData.filter(c => {
+    if (!categorySearchQuery) return true;
+    return c.titleAr.toLowerCase().includes(categorySearchQuery) || c.titleEn.toLowerCase().includes(categorySearchQuery);
+  });
 
   if (filtered.length === 0) {
-    wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>لا توجد أقسام مطابقة للبحث "${esc(categorySearchQuery)}".</p></div>`;
+    wrap.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📁</div>
+        <p>${categorySearchQuery ? 'لا توجد أقسام مطابقة للبحث' : 'لا توجد أقسام مضافة بعد'}</p>
+        <button class="btn-primary" onclick="openCategoryModal()">إضافة قسم جديد</button>
+      </div>
+    `;
     return;
   }
 
   wrap.innerHTML = `
     <div class="categories-cards-grid">
-      ${filtered.map((cat) => `
-        <div class="category-card">
+      ${filtered.map(cat => `
+        <div class="category-card" data-cat-id="${cat.id}">
           <div class="category-card-header">
-            ${cat.heroImage 
+            ${cat.heroImage
               ? `<img src="${esc(cat.heroImage)}" alt="${esc(cat.titleAr)}" class="category-card-thumb" onerror="this.outerHTML='<div class=\\'category-card-thumb-placeholder\\'>📁</div>'">`
               : `<div class="category-card-thumb-placeholder">📁</div>`}
             <div class="category-card-info">
               <h3>${esc(cat.titleAr)}</h3>
               <p>${esc(cat.titleEn)}</p>
             </div>
-            <div class="cat-count-badge">${cat.items.length} صنف</div>
           </div>
 
           ${cat.descAr ? `<div class="item-card-desc">${esc(cat.descAr)}</div>` : ''}
 
+          <div class="category-card-meta">
+            <span class="cat-count-badge">🍽️ ${cat.items?.length || 0} صنف</span>
+            ${cat.isDualPrice ? '<span class="table-badge">تسعير مزدوج (١٢/٢٤)</span>' : ''}
+          </div>
+
           <div class="item-card-footer">
-            <div class="category-card-meta">
-              ${cat.isDualPrice ? `<span class="table-badge bestseller">تسعير مزدوج</span>` : ''}
-            </div>
+            <button class="card-touch-btn quick-add" data-add-item-to="${cat.id}" title="إضافة صنف جديد داخل هذا القسم">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>أضف صنف</span>
+            </button>
+
             <div class="card-actions-group">
-              <button class="card-touch-btn quick-add" data-cat-add-item="${cat.id}" title="إضافة صنف لهذا القسم">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              </button>
               <button class="card-touch-btn edit" data-cat-edit="${cat.id}" title="تعديل القسم">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
               </button>
@@ -698,25 +734,24 @@ function renderCategories() {
     </div>
   `;
 
-  // Attach events
+  // Attach button events
   wrap.querySelectorAll("[data-cat-edit]").forEach(btn => {
     btn.addEventListener("click", () => openCategoryModal(btn.dataset.catEdit));
   });
   wrap.querySelectorAll("[data-cat-delete]").forEach(btn => {
     btn.addEventListener("click", () => deleteCategory(btn.dataset.catDelete));
   });
-  wrap.querySelectorAll("[data-cat-add-item]").forEach(btn => {
+  wrap.querySelectorAll("[data-add-item-to]").forEach(btn => {
     btn.addEventListener("click", () => {
-      selectedCategoryId = btn.dataset.catAddItem;
-      switchSection("items");
-      openItemModal(btn.dataset.catAddItem);
+      selectedCategoryId = btn.dataset.addItemTo;
+      openItemModal(btn.dataset.addItemTo);
     });
   });
 }
 
 function openCategoryModal(catId = null) {
-  const cat = catId ? menuData.find(c => c.id === catId) : null;
   currentEditId = catId;
+  const cat = catId ? menuData.find(c => c.id === catId) : null;
 
   document.getElementById("modalTitle").textContent = cat ? "تعديل القسم" : "إضافة قسم جديد";
   document.getElementById("modalBody").innerHTML = `
@@ -730,11 +765,11 @@ function openCategoryModal(catId = null) {
     </div>
     <div class="form-group">
       <label class="form-label">صورة القسم (اختياري)</label>
-      <input class="form-input" id="catHeroImage" value="${esc(cat?.heroImage || "")}" placeholder="assets/images/coffee.jpg أو اختر صورة من جهازك">
+      <input class="form-input" id="catHeroImage" value="${esc(cat?.heroImage || "")}" placeholder="رابط الصورة أو اختر من جهازك">
       <div class="image-upload-area" id="catImageUpload" style="margin-top: 8px;">
         <div class="upload-icon">📷</div>
-        <div class="upload-text">اضغط لاختيار صورة من جهازك / هاتفك</div>
-        <div class="upload-hint">يتم تحسينها وضغطها فوراً وبدون أي تكلفة</div>
+        <div class="upload-text">اضغط لاختيار صورة من هاتفك أو التقاطها بالكاميرا</div>
+        <div class="upload-hint">يتم ضغطها وتجهيزها للعرض فوراً</div>
         <input type="file" accept="image/*" id="catImageFile">
       </div>
       <div class="upload-progress" id="catUploadProgress"><div class="progress-bar-track"><div class="progress-bar-fill" id="catProgressFill"></div></div></div>
@@ -779,69 +814,63 @@ function saveCategory() {
   saveMenuData();
   hideModal();
   renderCategories();
+  renderCategoryPills();
   showToast(currentEditId ? "تم تحديث القسم بنجاح" : "تم إضافة القسم بنجاح");
 }
 
 function deleteCategory(catId) {
   const cat = menuData.find(c => c.id === catId);
   if (!cat) return;
-  if (!confirm(`هل أنت متأكد من حذف القسم "${cat.titleAr}"؟\nسيتم حذف جميع الأصناف (${cat.items.length}) داخله.`)) return;
+  if (!confirm(`هل أنت متأكد من حذف القسم "${cat.titleAr}"؟\nسيتم حذف جميع الأصناف (${cat.items?.length || 0}) بداخله.`)) return;
   menuData = menuData.filter(c => c.id !== catId);
   if (selectedCategoryId === catId) {
     selectedCategoryId = menuData[0]?.id || null;
   }
   saveMenuData();
   renderCategories();
+  renderCategoryPills();
+  renderItemsTable();
   showToast("تم حذف القسم بنجاح");
 }
 
 // ============================================================================
-// Items CRUD (Swipeable Category Pills + Adaptive Mobile Cards)
+// Items CRUD & Swipeable Category Pills
 // ============================================================================
-function renderItems() {
+function renderCategoryPills() {
+  const container = document.getElementById("categoryPillsWrap");
+  if (!container) return;
+
   if (menuData.length === 0) {
-    document.getElementById("categoryPillsWrap").innerHTML = "";
-    document.getElementById("itemsTableWrap").innerHTML = `<div class="empty-state"><div class="empty-icon">🍽️</div><p>أضف أقسام أولاً لتتمكن من إدارة الأصناف.</p></div>`;
+    container.innerHTML = "";
     return;
   }
 
-  // Ensure valid selectedCategoryId
-  if (!selectedCategoryId || !menuData.find(c => c.id === selectedCategoryId)) {
-    selectedCategoryId = menuData[0].id;
+  if (!selectedCategoryId || !menuData.some(c => c.id === selectedCategoryId)) {
+    selectedCategoryId = menuData[0]?.id;
   }
 
-  // Render Horizontal Category Pills
-  renderCategoryPills();
-
-  // Render Items List / Cards
-  renderItemsTable();
-}
-
-function renderCategoryPills() {
-  const wrap = document.getElementById("categoryPillsWrap");
-  if (!wrap) return;
-
-  wrap.innerHTML = menuData.map(cat => `
-    <button class="category-pill ${cat.id === selectedCategoryId ? 'active' : ''}" data-pill-cat="${cat.id}">
+  container.innerHTML = menuData.map(cat => `
+    <button type="button" class="category-pill ${cat.id === selectedCategoryId ? 'active' : ''}" data-cat-id="${cat.id}">
       <span>${esc(cat.titleAr)}</span>
-      <span class="cat-pill-count">${cat.items.length}</span>
+      <span class="cat-pill-count">${cat.items?.length || 0}</span>
     </button>
   `).join("");
 
-  wrap.querySelectorAll("[data-pill-cat]").forEach(pill => {
+  container.querySelectorAll(".category-pill").forEach(pill => {
     pill.addEventListener("click", () => {
-      selectedCategoryId = pill.dataset.pillCat;
-      wrap.querySelectorAll(".category-pill").forEach(p => p.classList.remove("active"));
+      selectedCategoryId = pill.dataset.catId;
+      container.querySelectorAll(".category-pill").forEach(p => p.classList.remove("active"));
       pill.classList.add("active");
-      pill.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-
-      // Sync select dropdown if any
-      const select = document.getElementById("itemCategoryFilter");
-      if (select) select.value = selectedCategoryId;
-
+      pill.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
       renderItemsTable();
     });
   });
+
+  // Sync with hidden select dropdown
+  const filter = document.getElementById("itemCategoryFilter");
+  if (filter) {
+    filter.innerHTML = menuData.map(c => `<option value="${c.id}" ${c.id === selectedCategoryId ? 'selected' : ''}>${esc(c.titleAr)}</option>`).join("");
+  }
 }
 
 function renderItemsTable() {
@@ -849,62 +878,66 @@ function renderItemsTable() {
   if (!wrap) return;
 
   let itemsToRender = [];
-  let isDual = false;
-  let activeCat = menuData.find(c => c.id === selectedCategoryId);
 
   if (itemSearchQuery) {
-    // If searching, search across all items in all categories
+    // Search across ALL categories
     menuData.forEach(cat => {
-      cat.items.forEach(item => {
-        const matchAr = item.nameAr && item.nameAr.toLowerCase().includes(itemSearchQuery);
-        const matchEn = item.nameEn && item.nameEn.toLowerCase().includes(itemSearchQuery);
-        const matchPrice = item.price && String(item.price).includes(itemSearchQuery);
-        const matchPrice12 = item.price12 && String(item.price12).includes(itemSearchQuery);
-        const matchPrice24 = item.price24 && String(item.price24).includes(itemSearchQuery);
-        if (matchAr || matchEn || matchPrice || matchPrice12 || matchPrice24) {
-          itemsToRender.push({ ...item, categoryId: cat.id, categoryTitleAr: cat.titleAr, isDualPrice: cat.isDualPrice });
-        }
-      });
+      if (Array.isArray(cat.items)) {
+        cat.items.forEach(item => {
+          const matchAr = item.nameAr.toLowerCase().includes(itemSearchQuery) || (item.descAr && item.descAr.toLowerCase().includes(itemSearchQuery));
+          const matchEn = item.nameEn.toLowerCase().includes(itemSearchQuery) || (item.descEn && item.descEn.toLowerCase().includes(itemSearchQuery));
+          const matchPrice = item.price && item.price.toString().includes(itemSearchQuery);
+          if (matchAr || matchEn || matchPrice) {
+            itemsToRender.push({ ...item, categoryId: cat.id, categoryTitleAr: cat.titleAr, isDualPrice: cat.isDualPrice });
+          }
+        });
+      }
     });
-
-    if (itemsToRender.length === 0) {
-      wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>لا توجد أصناف مطابقة للبحث "${esc(itemSearchQuery)}".</p></div>`;
-      return;
-    }
   } else {
-    if (!activeCat || activeCat.items.length === 0) {
-      wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">☕</div><p>لا توجد أصناف في هذا القسم. اضغط "إضافة صنف جديد" للبدء.</p></div>`;
-      return;
+    // Render active category items
+    const activeCat = menuData.find(c => c.id === selectedCategoryId);
+    if (activeCat && Array.isArray(activeCat.items)) {
+      itemsToRender = activeCat.items.map(i => ({ ...i, categoryId: activeCat.id, categoryTitleAr: activeCat.titleAr, isDualPrice: activeCat.isDualPrice }));
     }
-    itemsToRender = activeCat.items.map(item => ({
-      ...item,
-      categoryId: activeCat.id,
-      categoryTitleAr: activeCat.titleAr,
-      isDualPrice: activeCat.isDualPrice
-    }));
   }
 
-  const typeIcons = {
-    coffee: "☕ قهوة",
-    hot: "🔥 ساخن",
-    cold: "🧊 بارد",
-    desserts: "🧇 حلويات"
-  };
+  if (itemsToRender.length === 0) {
+    wrap.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🍽️</div>
+        <p>${itemSearchQuery ? 'لا توجد أصناف تطابق بحثك' : 'لا توجد أصناف في هذا القسم بعد'}</p>
+        <button class="btn-primary" id="emptyAddBtn">إضافة صنف جديد</button>
+      </div>
+    `;
+    const emptyAddBtn = document.getElementById("emptyAddBtn");
+    if (emptyAddBtn) {
+      emptyAddBtn.addEventListener("click", () => {
+        const catId = selectedCategoryId || menuData[0]?.id;
+        if (catId) openItemModal(catId);
+      });
+    }
+    return;
+  }
+
+  const typeIcons = { coffee: "☕ قهوة", hot: "🔥 ساخن", cold: "🧊 بارد", desserts: "🧇 حلويات" };
 
   wrap.innerHTML = `
     <div class="items-cards-grid">
-      ${itemsToRender.map((item) => `
-        <div class="item-card">
+      ${itemsToRender.map(item => `
+        <div class="item-card" data-item-id="${item.id}" data-cat-id="${item.categoryId}">
           <div class="item-card-top">
             <div class="item-card-title-wrap">
               <div class="item-card-name-ar">${esc(item.nameAr)}</div>
               <div class="item-card-name-en">${esc(item.nameEn)} ${itemSearchQuery ? `• <span style="color:var(--accent-copper);">(${esc(item.categoryTitleAr)})</span>` : ''}</div>
             </div>
-            <div class="item-card-badges">
-              <span class="table-badge type-${item.type || 'cold'}">${typeIcons[item.type] || item.type || '—'}</span>
-              ${item.isBestseller ? '<span class="table-badge bestseller">⭐ الأكثر طلباً</span>' : ''}
-              ${item.badgeAr ? `<span class="table-badge">${esc(item.badgeAr)}</span>` : ''}
-            </div>
+            <button class="bestseller-toggle-btn ${item.isBestseller ? 'active' : ''}" data-toggle-bestseller="${item.id}" data-cat="${item.categoryId}" title="تبديل شارة الأكثر طلباً">
+              ⭐ ${item.isBestseller ? 'الأكثر طلباً' : 'تمييز'}
+            </button>
+          </div>
+
+          <div class="item-card-badges">
+            <span class="table-badge type-${item.type || 'coffee'}">${typeIcons[item.type] || item.type || '—'}</span>
+            ${item.badgeAr ? `<span class="table-badge">${esc(item.badgeAr)}</span>` : ''}
           </div>
 
           ${item.descAr ? `<div class="item-card-desc">${esc(item.descAr)}</div>` : ''}
@@ -930,12 +963,30 @@ function renderItemsTable() {
     </div>
   `;
 
+  // Attach card event listeners
   wrap.querySelectorAll("[data-item-edit]").forEach(btn => {
     btn.addEventListener("click", () => openItemModal(btn.dataset.cat, btn.dataset.itemEdit));
   });
+
   wrap.querySelectorAll("[data-item-delete]").forEach(btn => {
     btn.addEventListener("click", () => deleteItem(btn.dataset.cat, btn.dataset.itemDelete));
   });
+
+  wrap.querySelectorAll("[data-toggle-bestseller]").forEach(btn => {
+    btn.addEventListener("click", () => toggleBestseller(btn.dataset.cat, btn.dataset.toggleBestseller));
+  });
+}
+
+function toggleBestseller(catId, itemId) {
+  const cat = menuData.find(c => c.id === catId);
+  if (!cat) return;
+  const item = cat.items.find(i => i.id === itemId);
+  if (!item) return;
+
+  item.isBestseller = !item.isBestseller;
+  saveMenuData();
+  renderItemsTable();
+  showToast(item.isBestseller ? `تم تمييز "${item.nameAr}" كـ الأكثر طلباً ⭐` : `تم إلغاء تمييز "${item.nameAr}"`);
 }
 
 function openItemModal(catId, itemId = null) {
@@ -1053,6 +1104,8 @@ function deleteItem(catId, itemId) {
 // ============================================================================
 function renderOfferEditor() {
   const wrap = document.getElementById("offerEditorCard");
+  if (!wrap) return;
+
   wrap.innerHTML = `
     <div class="offer-preview">
       <img src="${esc(offerData.image || 'assets/images/special_offers.jpg')}" alt="Offer" class="offer-preview-img" id="offerPreviewImg">
@@ -1082,7 +1135,7 @@ function renderOfferEditor() {
       <input class="form-input" id="offerImage" value="${esc(offerData.image || "")}" placeholder="رابط الصورة أو اختر من جهازك">
       <div class="image-upload-area" id="offerImageUpload" style="margin-top: 8px;">
         <div class="upload-icon">📷</div>
-        <div class="upload-text">اضغط لاختيار صورة من جهازك / هاتفك</div>
+        <div class="upload-text">اضغط لاختيار صورة من هاتفك أو التقاطها بالكاميرا</div>
         <div class="upload-hint">يتم ضغطها وتجهيزها للعرض فوراً</div>
         <input type="file" accept="image/*" id="offerImageFile">
       </div>
@@ -1107,7 +1160,7 @@ function renderOfferEditor() {
     offerData.originalEn = document.getElementById("offerOrigEn").value.trim();
     offerData.image = document.getElementById("offerImage").value.trim();
     saveOfferData();
-    showToast("تم حفظ العرض الخاص بنجاح");
+    showToast("تم تحديث العرض الخاص بنجاح");
     renderOfferEditor();
   });
 }
@@ -1116,91 +1169,96 @@ function renderOfferEditor() {
 // Settings
 // ============================================================================
 function renderSettings() {
-  const grid = document.getElementById("settingsGrid");
-  grid.innerHTML = `
+  const wrap = document.getElementById("settingsGrid");
+  if (!wrap) return;
+
+  wrap.innerHTML = `
+    <!-- Contact Info -->
     <div class="settings-card">
-      <div class="settings-card-header"><span class="settings-icon">☁️</span><h3>إعدادات السحابة والتخزين (Cloudinary)</h3></div>
+      <div class="settings-card-header">
+        <span class="settings-icon">📞</span>
+        <h3>معلومات التواصل والطلبات</h3>
+      </div>
       <div class="settings-card-body">
-        <p style="font-size:0.84rem;color:var(--text-secondary);line-height:1.5;">
-          اربط حساب Cloudinary المجاني لرفع وتخزين الصور مباشرة على السحابة (CDN) بسرعة فائقة وبدون أي تخزين محلي.
-        </p>
-        <div class="form-group">
-          <label class="form-label">Cloud Name (اسم السحابة في Cloudinary)</label>
-          <input class="form-input" id="setCloudName" value="${esc(settingsData.cloudinaryCloudName || "")}" placeholder="e.g. dxyz123abc" dir="ltr">
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">رقم الواتساب (مع كود الدولة)</label><input class="form-input" id="setWhatsapp" value="${esc(settingsData.whatsappNumber || "")}" placeholder="مثال: 201000000000"></div>
+          <div class="form-group"><label class="form-label">رقم الهاتف للاتصال</label><input class="form-input" id="setPhone" value="${esc(settingsData.phoneNumber || "")}" placeholder="مثال: +201000000000"></div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Upload Preset (Unsigned)</label>
-          <input class="form-input" id="setUploadPreset" value="${esc(settingsData.cloudinaryUploadPreset || "")}" placeholder="e.g. moka_menu_preset" dir="ltr">
-        </div>
-        <button class="btn-primary" id="saveCloudinaryBtn">حفظ إعدادات Cloudinary ☁️</button>
+        <div class="form-group"><label class="form-label">رابط إنستغرام</label><input class="form-input" id="setInstagram" value="${esc(settingsData.instagramUrl || "")}" placeholder="https://instagram.com/mokacafe"></div>
+        <button class="btn-primary" id="saveContactSettings" style="align-self:flex-start;">حفظ معلومات التواصل</button>
       </div>
     </div>
 
+    <!-- Security (PIN) -->
     <div class="settings-card">
-      <div class="settings-card-header"><span class="settings-icon">📱</span><h3>وسائل التواصل وطلب الواتساب</h3></div>
+      <div class="settings-card-header">
+        <span class="settings-icon">🔒</span>
+        <h3>الأمان ورمز الدخول (PIN)</h3>
+      </div>
       <div class="settings-card-body">
-        <div class="form-group"><label class="form-label">رقم الواتساب لاستقبال الطلبات (كود الدولة + الرقم بدون +)</label><input class="form-input" id="setWhatsapp" value="${esc(settingsData.whatsappNumber || "")}" placeholder="201000000000" dir="ltr"></div>
-        <div class="form-group"><label class="form-label">رابط Instagram</label><input class="form-input" id="setInstagram" value="${esc(settingsData.instagramUrl || "")}" placeholder="https://instagram.com/mokacafe" dir="ltr"></div>
-        <div class="form-group"><label class="form-label">رقم الهاتف للاتصال المباشر</label><input class="form-input" id="setPhone" value="${esc(settingsData.phoneNumber || "")}" placeholder="+201000000000" dir="ltr"></div>
-        <button class="btn-primary" id="saveSocialBtn">حفظ وسائل التواصل</button>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">رمز PIN الجديد (٤ أرقام)</label><input type="password" maxlength="4" class="form-input" id="setNewPin" placeholder="مثال: 1234" inputmode="numeric"></div>
+          <div class="form-group"><label class="form-label">تأكيد رمز PIN</label><input type="password" maxlength="4" class="form-input" id="setConfirmPin" placeholder="أعد كتابة الرمز" inputmode="numeric"></div>
+        </div>
+        <button class="btn-primary" id="savePinSettings" style="align-self:flex-start;">تغيير رمز الدخول</button>
       </div>
     </div>
 
+    <!-- Cloudinary -->
     <div class="settings-card">
-      <div class="settings-card-header"><span class="settings-icon">🔐</span><h3>تغيير رمز الدخول PIN</h3></div>
+      <div class="settings-card-header">
+        <span class="settings-icon">☁️</span>
+        <h3>إعدادات رفع الصور السحابية (Cloudinary)</h3>
+      </div>
       <div class="settings-card-body">
-        <div class="form-group"><label class="form-label">الرمز الحالي</label><input type="password" class="form-input" id="currentPin" maxlength="4" placeholder="****"></div>
-        <div class="form-group"><label class="form-label">الرمز الجديد (4 أرقام)</label><input type="password" class="form-input" id="newPin" maxlength="4" placeholder="****"></div>
-        <div class="form-group"><label class="form-label">تأكيد الرمز الجديد</label><input type="password" class="form-input" id="confirmPin" maxlength="4" placeholder="****"></div>
-        <button class="btn-primary" id="changePinBtn">تغيير رمز PIN</button>
+        <p style="font-size:0.84rem;color:var(--text-muted);line-height:1.5;">تتيح خدمة Cloudinary رفع صور المنيو والأقسام من الهاتف إلى السحابة فوراً مع ضغط وتحسين السرعة مجاناً.</p>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Cloud Name</label><input class="form-input" id="setCloudName" value="${esc(settingsData.cloudinaryCloudName || "")}" placeholder="e.g. qrif7qmf"></div>
+          <div class="form-group"><label class="form-label">Upload Preset</label><input class="form-input" id="setUploadPreset" value="${esc(settingsData.cloudinaryUploadPreset || "")}" placeholder="e.g. moka menu"></div>
+        </div>
+        <button class="btn-primary" id="saveCloudinarySettings" style="align-self:flex-start;">حفظ إعدادات Cloudinary</button>
       </div>
     </div>
   `;
 
-  document.getElementById("saveCloudinaryBtn").addEventListener("click", () => {
+  document.getElementById("saveContactSettings").addEventListener("click", () => {
+    settingsData.whatsappNumber = document.getElementById("setWhatsapp").value.trim();
+    settingsData.phoneNumber = document.getElementById("setPhone").value.trim();
+    settingsData.instagramUrl = document.getElementById("setInstagram").value.trim();
+    settingsData.whatsappUrl = `https://wa.me/${settingsData.whatsappNumber}`;
+    saveSettings();
+    showToast("تم حفظ معلومات التواصل بنجاح");
+  });
+
+  document.getElementById("savePinSettings").addEventListener("click", () => {
+    const newPin = document.getElementById("setNewPin").value.trim();
+    const confirmPin = document.getElementById("setConfirmPin").value.trim();
+    if (!newPin || newPin.length !== 4 || !/^\d{4}$/.test(newPin)) {
+      showToast("يجب أن يتكون رمز PIN من ٤ أرقام بالضبط", "error");
+      return;
+    }
+    if (newPin !== confirmPin) {
+      showToast("رمز PIN وتأكيده غير متطابقين", "error");
+      return;
+    }
+    settingsData.adminPin = newPin;
+    saveSettings();
+    document.getElementById("setNewPin").value = "";
+    document.getElementById("setConfirmPin").value = "";
+    showToast("تم تغيير رمز الدخول بنجاح");
+  });
+
+  document.getElementById("saveCloudinarySettings").addEventListener("click", () => {
     settingsData.cloudinaryCloudName = document.getElementById("setCloudName").value.trim();
     settingsData.cloudinaryUploadPreset = document.getElementById("setUploadPreset").value.trim();
     saveSettings();
-    showToast("تم حفظ إعدادات Cloudinary بنجاح ☁️");
-  });
-
-  document.getElementById("saveSocialBtn").addEventListener("click", () => {
-    settingsData.whatsappNumber = document.getElementById("setWhatsapp").value.trim();
-    settingsData.instagramUrl = document.getElementById("setInstagram").value.trim();
-    settingsData.phoneNumber = document.getElementById("setPhone").value.trim();
-    settingsData.whatsappUrl = `https://wa.me/${settingsData.whatsappNumber}`;
-    saveSettings();
-    showToast("تم حفظ وسائل التواصل بنجاح");
-  });
-
-  document.getElementById("changePinBtn").addEventListener("click", () => {
-    const current = document.getElementById("currentPin").value;
-    const newPin = document.getElementById("newPin").value;
-    const confirm = document.getElementById("confirmPin").value;
-
-    if (current !== (settingsData.adminPin || "1234")) {
-      showToast("الرمز الحالي غير صحيح", "error"); return;
-    }
-    if (newPin.length !== 4 || !/^\d{4}$/.test(newPin)) {
-      showToast("الرمز الجديد يجب أن يكون 4 أرقام", "error"); return;
-    }
-    if (newPin !== confirm) {
-      showToast("الرمز الجديد وتأكيده غير متطابقين", "error"); return;
-    }
-
-    settingsData.adminPin = newPin;
-    saveSettings();
-    showToast("تم تغيير رمز PIN بنجاح");
-    document.getElementById("currentPin").value = "";
-    document.getElementById("newPin").value = "";
-    document.getElementById("confirmPin").value = "";
+    showToast("تم حفظ إعدادات Cloudinary بنجاح");
   });
 }
 
 // ============================================================================
-// Cloudinary Direct Cloud Image Upload
+// Cloudinary Direct Cloud Image Upload & Compression
 // ============================================================================
-
 async function uploadImage(file, targetInputId, progressWrapperId, progressFillId) {
   if (!file) return;
 
@@ -1228,7 +1286,6 @@ async function uploadImage(file, targetInputId, progressWrapperId, progressFillI
 
       let data = await response.json();
 
-      // Retry with underscore version if failed due to preset name space
       if (!data.secure_url && uploadPreset.includes(" ")) {
         formData = new FormData();
         formData.append("file", file);
@@ -1266,9 +1323,8 @@ async function uploadImage(file, targetInputId, progressWrapperId, progressFillI
     }
   }
 
-  // 2. If Cloudinary credentials are not filled, show guided toast and compress
+  // 2. Fallback: local compression
   try {
-    showToast("يرجى إدخال Cloud Name و Upload Preset في الإعدادات لرفع الصور إلى Cloudinary", "info");
     const compressed = await compressImage(file);
     const input = document.getElementById(targetInputId);
     if (input) {
@@ -1279,7 +1335,7 @@ async function uploadImage(file, targetInputId, progressWrapperId, progressFillI
     if (progressFill) progressFill.style.width = "100%";
     setTimeout(() => {
       if (progressWrap) progressWrap.classList.remove("active");
-      showToast("تم حفظ الصورة مؤقتاً");
+      showToast("تم حفظ الصورة ومعالجتها بنجاح");
     }, 300);
   } catch (err) {
     if (progressWrap) progressWrap.classList.remove("active");
@@ -1287,9 +1343,6 @@ async function uploadImage(file, targetInputId, progressWrapperId, progressFillI
   }
 }
 
-/**
- * Resizes and compresses an image file to a lightweight Data URL (fallback)
- */
 function compressImage(file, maxWidth = 1000, maxHeight = 1000, quality = 0.82) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -1331,31 +1384,31 @@ let modalSaveCallback = null;
 
 function showModal(onSave) {
   modalSaveCallback = onSave;
-  document.getElementById("modalOverlay").classList.add("active");
+  document.getElementById("modalOverlay")?.classList.add("active");
 }
 
 function hideModal() {
-  document.getElementById("modalOverlay").classList.remove("active");
+  document.getElementById("modalOverlay")?.classList.remove("active");
   modalSaveCallback = null;
   currentEditId = null;
 }
 
 function initModal() {
-  document.getElementById("modalCloseBtn").addEventListener("click", hideModal);
-  document.getElementById("modalCancelBtn").addEventListener("click", hideModal);
-  document.getElementById("modalOverlay").addEventListener("click", (e) => {
+  document.getElementById("modalCloseBtn")?.addEventListener("click", hideModal);
+  document.getElementById("modalCancelBtn")?.addEventListener("click", hideModal);
+  document.getElementById("modalOverlay")?.addEventListener("click", (e) => {
     if (e.target === e.currentTarget) hideModal();
   });
-  document.getElementById("modalSaveBtn").addEventListener("click", () => {
+  document.getElementById("modalSaveBtn")?.addEventListener("click", () => {
     if (modalSaveCallback) modalSaveCallback();
   });
 }
 
 // ============================================================================
-// Export / Import / Reset
+// Export / Import / Reset Tools
 // ============================================================================
 function initTools() {
-  document.getElementById("exportBtn").addEventListener("click", () => {
+  document.getElementById("exportBtn")?.addEventListener("click", () => {
     const exportData = { menu: menuData, offer: offerData, settings: settingsData, exportedAt: new Date().toISOString() };
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -1364,10 +1417,10 @@ function initTools() {
     a.download = `moka-menu-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast("تم تحميل النسخة الاحتياطية");
+    showToast("تم تحميل النسخة الاحتياطية بنجاح");
   });
 
-  document.getElementById("importFileInput").addEventListener("change", (e) => {
+  document.getElementById("importFileInput")?.addEventListener("change", (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
@@ -1395,7 +1448,7 @@ function initTools() {
     e.target.value = "";
   });
 
-  document.getElementById("resetBtn").addEventListener("click", () => {
+  document.getElementById("resetBtn")?.addEventListener("click", () => {
     if (!confirm("⚠️ هل أنت متأكد من إعادة تعيين جميع البيانات إلى القيم الافتراضية؟\nلا يمكن التراجع عن هذا الإجراء.")) return;
     localStorage.removeItem("moka_menu_data");
     localStorage.removeItem("moka_offer_data");
@@ -1403,12 +1456,15 @@ function initTools() {
     localStorage.removeItem("moka_last_edit");
     loadData();
     renderDashboard();
+    renderCategories();
+    renderCategoryPills();
+    renderItemsTable();
     showToast("تم إعادة تعيين جميع البيانات إلى القيم الافتراضية");
   });
 }
 
 // ============================================================================
-// Init
+// Initialization
 // ============================================================================
 document.addEventListener("DOMContentLoaded", () => {
   loadData();
@@ -1418,18 +1474,11 @@ document.addEventListener("DOMContentLoaded", () => {
   initModal();
   initTools();
 
-  // Wire up Add buttons
-  const addCategoryBtn = document.getElementById("addCategoryBtn");
-  if (addCategoryBtn) {
-    addCategoryBtn.addEventListener("click", () => openCategoryModal());
-  }
-
-  const addItemBtn = document.getElementById("addItemBtn");
-  if (addItemBtn) {
-    addItemBtn.addEventListener("click", () => {
-      const catId = selectedCategoryId || document.getElementById("itemCategoryFilter")?.value || menuData[0]?.id;
-      if (!catId) { showToast("أضف قسم أولاً لتتمكن من إضافة أصناف", "error"); return; }
-      openItemModal(catId);
-    });
-  }
+  // Add buttons
+  document.getElementById("addCategoryBtn")?.addEventListener("click", () => openCategoryModal());
+  document.getElementById("addItemBtn")?.addEventListener("click", () => {
+    const catId = selectedCategoryId || menuData[0]?.id;
+    if (!catId) { showToast("أضف قسماً أولاً لتتمكن من إضافة أصناف", "error"); return; }
+    openItemModal(catId);
+  });
 });

@@ -2,9 +2,10 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>لوحة التحكم — موكا كافيه | MoKa Cafe Admin</title>
   <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#120D0B">
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,18 +20,39 @@
   <!-- ========== LOGIN SCREEN ========== -->
   <div class="login-screen" id="loginScreen">
     <div class="login-card">
-      <img src="assets/images/logo.jpg" alt="MoKa Logo" class="login-logo">
+      <div class="login-logo-wrap">
+        <img src="assets/images/logo.jpg" alt="MoKa Logo" class="login-logo">
+      </div>
       <h1 class="login-title">MoKa Admin</h1>
       <p class="login-subtitle">أدخل رمز PIN للدخول إلى لوحة التحكم</p>
 
+      <!-- PIN Indicator Dots / Inputs -->
       <div class="pin-input-group" id="pinInputGroup">
-        <input type="tel" class="pin-digit" maxlength="1" data-pin="0" autocomplete="off" inputmode="numeric" autofocus>
-        <input type="tel" class="pin-digit" maxlength="1" data-pin="1" autocomplete="off" inputmode="numeric">
-        <input type="tel" class="pin-digit" maxlength="1" data-pin="2" autocomplete="off" inputmode="numeric">
-        <input type="tel" class="pin-digit" maxlength="1" data-pin="3" autocomplete="off" inputmode="numeric">
+        <input type="password" class="pin-digit" maxlength="1" data-pin="0" autocomplete="off" inputmode="numeric" readonly>
+        <input type="password" class="pin-digit" maxlength="1" data-pin="1" autocomplete="off" inputmode="numeric" readonly>
+        <input type="password" class="pin-digit" maxlength="1" data-pin="2" autocomplete="off" inputmode="numeric" readonly>
+        <input type="password" class="pin-digit" maxlength="1" data-pin="3" autocomplete="off" inputmode="numeric" readonly>
       </div>
 
-      <button type="button" class="login-btn" id="loginBtn">
+      <!-- Touch Numeric Keypad for Fast Mobile Login -->
+      <div class="pin-keypad" id="pinKeypad">
+        <button type="button" class="keypad-btn" data-key="1">1</button>
+        <button type="button" class="keypad-btn" data-key="2">2</button>
+        <button type="button" class="keypad-btn" data-key="3">3</button>
+        <button type="button" class="keypad-btn" data-key="4">4</button>
+        <button type="button" class="keypad-btn" data-key="5">5</button>
+        <button type="button" class="keypad-btn" data-key="6">6</button>
+        <button type="button" class="keypad-btn" data-key="7">7</button>
+        <button type="button" class="keypad-btn" data-key="8">8</button>
+        <button type="button" class="keypad-btn" data-key="9">9</button>
+        <button type="button" class="keypad-btn secondary" data-key="clear">C</button>
+        <button type="button" class="keypad-btn" data-key="0">0</button>
+        <button type="button" class="keypad-btn secondary" data-key="backspace">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>
+        </button>
+      </div>
+
+      <button type="button" class="login-btn" id="loginBtn" style="display:none;">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
         دخول
       </button>
@@ -81,7 +103,7 @@
         </button>
         <button class="nav-item" data-section="tools">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          تصدير واستيراد
+          النسخ الاحتياطي
         </button>
       </nav>
 
@@ -97,17 +119,23 @@
     <div class="admin-main">
       <!-- Top Header -->
       <header class="admin-header">
-        <div style="display:flex;align-items:center;gap:12px;">
-          <button class="menu-toggle-btn" id="menuToggleBtn">
+        <div class="admin-header-left">
+          <button class="menu-toggle-btn" id="menuToggleBtn" aria-label="القائمة الجانبية">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
           </button>
-          <h2 class="admin-header-title" id="headerTitle">الرئيسية</h2>
+          <div class="header-brand-badge">
+            <img src="assets/images/logo.jpg" alt="MoKa" class="header-logo-mini">
+            <h2 class="admin-header-title" id="headerTitle">الرئيسية</h2>
+          </div>
         </div>
         <div class="header-actions">
-          <span class="cloud-status-badge" id="cloudStatusBadge" style="font-size:0.75rem;padding:4px 10px;border-radius:12px;background:rgba(16,185,129,0.15);color:#10B981;border:1px solid rgba(16,185,129,0.3);display:inline-flex;align-items:center;gap:4px;">☁️ متصل بالسحابة</span>
-          <a href="index.html" target="_blank" class="preview-btn">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-            معاينة القائمة
+          <span class="cloud-status-badge" id="cloudStatusBadge" title="حالة المزامنة السحابية">
+            <span class="cloud-dot"></span>
+            <span class="cloud-text">متصل بالسحابة</span>
+          </span>
+          <a href="index.html" target="_blank" class="preview-btn" title="معاينة المنيو كما يظهر للزبائن">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            <span class="preview-text">معاينة المنيو</span>
           </a>
         </div>
       </header>
@@ -135,7 +163,7 @@
             </button>
             <a href="index.html" target="_blank" class="quick-action-btn secondary">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-              <span>معاينة القائمة</span>
+              <span>معاينة المنيو</span>
             </a>
           </div>
 
@@ -179,7 +207,7 @@
           <div class="search-filter-bar">
             <div class="search-input-box">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              <input type="text" id="categorySearchInput" placeholder="بحث في الأقسام..." autocomplete="off">
+              <input type="text" id="categorySearchInput" placeholder="بحث في الأقسام بالاسم العربي أو الإنجليزي..." autocomplete="off">
               <button class="clear-search-btn" id="clearCategorySearch" style="display:none;">✕</button>
             </div>
           </div>
@@ -206,7 +234,7 @@
           <div class="search-filter-bar">
             <div class="search-input-box">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              <input type="text" id="itemSearchInput" placeholder="ابحث عن صنف بالاسم أو السعر..." autocomplete="off">
+              <input type="text" id="itemSearchInput" placeholder="ابحث عن صنف بالاسم أو السعر عبر كل الأقسام..." autocomplete="off">
               <button class="clear-search-btn" id="clearItemSearch" style="display:none;">✕</button>
             </div>
           </div>
@@ -257,15 +285,15 @@
         <div class="content-section" id="section-tools">
           <div class="section-header">
             <div>
-              <h2 class="section-title-main">أدوات البيانات</h2>
+              <h2 class="section-title-main">النسخ الاحتياطي والبيانات</h2>
               <p class="section-desc-text">تصدير واستيراد وإعادة تعيين بيانات القائمة</p>
             </div>
           </div>
           <div class="tools-grid">
             <div class="tool-card">
               <div class="tool-card-icon">📤</div>
-              <h4>تصدير البيانات</h4>
-              <p>حفظ نسخة احتياطية من بيانات القائمة كاملة بصيغة JSON</p>
+              <h4>تصدير نسخة احتياطية</h4>
+              <p>حفظ نسخة احتياطية من بيانات القائمة كاملة بصيغة JSON على جهازك</p>
               <button class="btn-primary" id="exportBtn">تحميل ملف النسخة الاحتياطية</button>
             </div>
             <div class="tool-card">
@@ -279,7 +307,7 @@
             </div>
             <div class="tool-card">
               <div class="tool-card-icon">🔄</div>
-              <h4>إعادة التعيين</h4>
+              <h4>إعادة التعيين الافتراضية</h4>
               <p>مسح جميع التعديلات والعودة إلى القائمة الافتراضية الأصلية</p>
               <button class="btn-danger" id="resetBtn">إعادة تعيين الكل</button>
             </div>
@@ -326,7 +354,7 @@
   </nav>
 
   <!-- ========== MOBILE FLOATING ACTION BUTTON ========== -->
-  <button class="mobile-fab-btn" id="mobileFabBtn" aria-label="إضافة سريعة">
+  <button class="mobile-fab-btn" id="mobileFabBtn" aria-label="إضافة سريعة" title="إضافة سريعة">
     <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
   </button>
 
@@ -336,7 +364,7 @@
       <div class="modal-drag-handle"></div>
       <div class="modal-header">
         <h3 class="modal-title" id="modalTitle">عنوان</h3>
-        <button class="modal-close-btn" id="modalCloseBtn">
+        <button class="modal-close-btn" id="modalCloseBtn" aria-label="إغلاق">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
@@ -344,7 +372,7 @@
         <!-- Rendered dynamically -->
       </div>
       <div class="modal-footer" id="modalFooter">
-        <button class="btn-primary" id="modalSaveBtn">حفظ</button>
+        <button class="btn-primary" id="modalSaveBtn">حفظ التغييرات</button>
         <button class="btn-secondary" id="modalCancelBtn">إلغاء</button>
       </div>
     </div>
