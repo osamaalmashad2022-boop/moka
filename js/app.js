@@ -322,7 +322,10 @@ const DEFAULT_MENU_CATEGORIES = [
 function loadMenuData() {
   try {
     const saved = localStorage.getItem("moka_menu_data");
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
   } catch (e) { /* fallback to defaults */ }
   return JSON.parse(JSON.stringify(DEFAULT_MENU_CATEGORIES));
 }
@@ -493,16 +496,16 @@ function initCloudSync() {
   subscribeToCloud((cloudData) => {
     if (!cloudData) return;
     let changed = false;
-    if (cloudData.menu && Array.isArray(cloudData.menu)) {
+    if (cloudData.menu && Array.isArray(cloudData.menu) && cloudData.menu.length > 0) {
       menuCategories = cloudData.menu;
       localStorage.setItem("moka_menu_data", JSON.stringify(menuCategories));
       changed = true;
     }
-    if (cloudData.offer) {
+    if (cloudData.offer && Object.keys(cloudData.offer).length > 0) {
       localStorage.setItem("moka_offer_data", JSON.stringify(cloudData.offer));
       changed = true;
     }
-    if (cloudData.settings) {
+    if (cloudData.settings && Object.keys(cloudData.settings).length > 0) {
       localStorage.setItem("moka_settings", JSON.stringify(cloudData.settings));
       changed = true;
     }

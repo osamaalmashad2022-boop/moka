@@ -248,7 +248,8 @@ let currentSection = "dashboard";
 function loadData() {
   try {
     const saved = localStorage.getItem("moka_menu_data");
-    menuData = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_MENU));
+    const parsed = saved ? JSON.parse(saved) : null;
+    menuData = (Array.isArray(parsed) && parsed.length > 0) ? parsed : JSON.parse(JSON.stringify(DEFAULT_MENU));
   } catch { menuData = JSON.parse(JSON.stringify(DEFAULT_MENU)); }
   try {
     const saved = localStorage.getItem("moka_offer_data");
@@ -299,15 +300,15 @@ async function loadCloudDataInitial() {
     updateCloudBadge("saving");
     const cloudData = await fetchFromCloud();
     if (cloudData) {
-      if (cloudData.menu && Array.isArray(cloudData.menu)) {
+      if (cloudData.menu && Array.isArray(cloudData.menu) && cloudData.menu.length > 0) {
         menuData = cloudData.menu;
         localStorage.setItem("moka_menu_data", JSON.stringify(menuData));
       }
-      if (cloudData.offer) {
+      if (cloudData.offer && Object.keys(cloudData.offer).length > 0) {
         offerData = cloudData.offer;
         localStorage.setItem("moka_offer_data", JSON.stringify(offerData));
       }
-      if (cloudData.settings) {
+      if (cloudData.settings && Object.keys(cloudData.settings).length > 0) {
         settingsData = { ...DEFAULT_SETTINGS, ...cloudData.settings };
         localStorage.setItem("moka_settings", JSON.stringify(settingsData));
       }
