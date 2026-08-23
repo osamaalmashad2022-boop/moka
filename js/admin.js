@@ -241,6 +241,9 @@ let offerData = {};
 let settingsData = {};
 let currentEditId = null;
 let currentSection = "dashboard";
+let selectedCategoryId = null;
+let itemSearchQuery = "";
+let categorySearchQuery = "";
 
 // ============================================================================
 // Data Persistence (localStorage)
@@ -262,6 +265,10 @@ function loadData() {
     if (!settingsData.cloudinaryCloudName) settingsData.cloudinaryCloudName = "qrif7qmf";
     if (!settingsData.cloudinaryUploadPreset) settingsData.cloudinaryUploadPreset = "moka menu";
   } catch { settingsData = { ...DEFAULT_SETTINGS }; }
+
+  if (!selectedCategoryId && menuData.length > 0) {
+    selectedCategoryId = menuData[0].id;
+  }
 }
 
 function updateCloudBadge(state = "saved") {
@@ -312,6 +319,9 @@ async function loadCloudDataInitial() {
         settingsData = { ...DEFAULT_SETTINGS, ...cloudData.settings };
         localStorage.setItem("moka_settings", JSON.stringify(settingsData));
       }
+      if (!selectedCategoryId && menuData.length > 0) {
+        selectedCategoryId = menuData[0].id;
+      }
       renderDashboard();
       if (currentSection === "categories") renderCategories();
       if (currentSection === "items") renderItems();
@@ -319,7 +329,6 @@ async function loadCloudDataInitial() {
       if (currentSection === "settings") renderSettings();
       updateCloudBadge("saved");
     } else {
-      // First time: sync default menu to cloud
       triggerCloudSync();
     }
   } catch (err) {
@@ -379,14 +388,19 @@ function initLogin() {
   const loginBtn = document.getElementById("loginBtn");
   const loginError = document.getElementById("loginError");
 
-  // Auto-focus and auto-advance
   pins.forEach((pin, idx) => {
     pin.addEventListener("input", (e) => {
       const val = e.target.value.replace(/\D/g, "");
       e.target.value = val.slice(0, 1);
-      if (val && idx < pins.length - 1) pins[idx + 1].focus();
+      if (val && idx < pins.length - 1) {
+        pins[idx + 1].focus();
+      }
       loginError.textContent = "";
       pins.forEach(p => p.classList.remove("error"));
+
+      // Auto submit on last digit
+      const allFilled = Array.from(pins).every(p => p.value.length === 1);
+      if (allFilled) attemptLogin();
     });
     pin.addEventListener("keydown", (e) => {
       if (e.key === "Backspace" && !pin.value && idx > 0) {
@@ -405,7 +419,6 @@ function initLogin() {
   if (pins[0]) pins[0].focus();
   if (loginBtn) loginBtn.addEventListener("click", attemptLogin);
 
-  // Check if already authenticated this session
   if (sessionStorage.getItem("moka_admin_auth") === "true") {
     showAdminPanel();
   }
@@ -445,10 +458,9 @@ function logout() {
 }
 
 // ============================================================================
-// Navigation
+// Navigation (Sidebar + Mobile Bottom Nav)
 // ============================================================================
-function initNavigation() {
-  const navItems = document.querySelectorAll(".nav-item[data-section]");
+function switchSection(section) {
   const sectionTitles = {
     dashboard: "الرئيسية",
     categories: "إدارة الأقسام",
@@ -458,30 +470,84 @@ function initNavigation() {
     tools: "تصدير واستيراد"
   };
 
-  navItems.forEach(item => {
-    item.addEventListener("click", () => {
-      const section = item.dataset.section;
-      currentSection = section;
-      navItems.forEach(n => n.classList.remove("active"));
-      item.classList.add("active");
+  currentSection = section;
 
-      document.querySelectorAll(".content-section").forEach(s => s.classList.remove("active"));
-      const target = document.getElementById(`section-${section}`);
-      if (target) target.classList.add("active");
-
-      document.getElementById("headerTitle").textContent = sectionTitles[section] || "";
-
-      // Render section content
-      if (section === "dashboard") renderDashboard();
-      else if (section === "categories") renderCategories();
-      else if (section === "items") renderItems();
-      else if (section === "offers") renderOfferEditor();
-      else if (section === "settings") renderSettings();
-
-      // Close mobile sidebar
-      closeSidebar();
-    });
+  // Update sidebar active item
+  document.querySelectorAll(".nav-item[data-section]").forEach(n => {
+    n.classList.toggle("active", n.dataset.section === section);
   });
+
+  // Update mobile bottom nav active button
+  document.querySelectorAll(".mob-nav-btn[data-section]").forEach(b => {
+    b.classList.toggle("active", b.dataset.section === section);
+  });
+
+  // Switch content section
+  document.querySelectorAll(".content-section").forEach(s => s.classList.remove("active"));
+  const target = document.getElementById(`section-${section}`);
+  if (target) target.classList.add("active");
+
+  const headerTitle = document.getElementById("headerTitle");
+  if (headerTitle) headerTitle.textContent = sectionTitles[section] || "";
+
+  // Render section content
+  if (section === "dashboard") renderDashboard();
+  else if (section === "categories") renderCategories();
+  else if (section === "items") renderItems();
+  else if (section === "offers") renderOfferEditor();
+  else if (section === "settings") renderSettings();
+
+  closeSidebar();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function initNavigation() {
+  // Sidebar items
+  document.querySelectorAll(".nav-item[data-section]").forEach(item => {
+    item.addEventListener("click", () => switchSection(item.dataset.section));
+  });
+
+  // Mobile bottom nav items
+  document.querySelectorAll(".mob-nav-btn[data-section]").forEach(btn => {
+    btn.addEventListener("click", () => switchSection(btn.dataset.section));
+  });
+
+  // Stat cards jump clicks
+  document.querySelectorAll(".stat-card[data-jump-section]").forEach(card => {
+    card.addEventListener("click", () => switchSection(card.dataset.jumpSection));
+  });
+
+  // Quick Action Buttons
+  const quickAddItemBtn = document.getElementById("quickAddItemBtn");
+  if (quickAddItemBtn) {
+    quickAddItemBtn.addEventListener("click", () => {
+      switchSection("items");
+      const activeCat = selectedCategoryId || menuData[0]?.id;
+      if (activeCat) openItemModal(activeCat);
+    });
+  }
+
+  const quickAddCatBtn = document.getElementById("quickAddCatBtn");
+  if (quickAddCatBtn) {
+    quickAddCatBtn.addEventListener("click", () => {
+      switchSection("categories");
+      openCategoryModal();
+    });
+  }
+
+  // Mobile FAB Button
+  const fabBtn = document.getElementById("mobileFabBtn");
+  if (fabBtn) {
+    fabBtn.addEventListener("click", () => {
+      if (currentSection === "categories") {
+        openCategoryModal();
+      } else {
+        const catId = selectedCategoryId || menuData[0]?.id;
+        if (catId) openItemModal(catId);
+        else openCategoryModal();
+      }
+    });
+  }
 
   // Mobile sidebar toggle
   const toggleBtn = document.getElementById("menuToggleBtn");
@@ -497,6 +563,9 @@ function initNavigation() {
   
   const logoutBtn = document.getElementById("logoutBtn");
   if (logoutBtn) logoutBtn.addEventListener("click", logout);
+
+  // Search filters
+  initSearchFilters();
 }
 
 function closeSidebar() {
@@ -504,6 +573,49 @@ function closeSidebar() {
   const overlay = document.getElementById("sidebarOverlay");
   if (sidebar) sidebar.classList.remove("open");
   if (overlay) overlay.classList.remove("active");
+}
+
+// ============================================================================
+// Search Filters (Items & Categories)
+// ============================================================================
+function initSearchFilters() {
+  const itemSearchInput = document.getElementById("itemSearchInput");
+  const clearItemSearch = document.getElementById("clearItemSearch");
+  if (itemSearchInput) {
+    itemSearchInput.addEventListener("input", (e) => {
+      itemSearchQuery = e.target.value.trim().toLowerCase();
+      if (clearItemSearch) clearItemSearch.style.display = itemSearchQuery ? "flex" : "none";
+      renderItemsTable();
+    });
+  }
+  if (clearItemSearch) {
+    clearItemSearch.addEventListener("click", () => {
+      itemSearchInput.value = "";
+      itemSearchQuery = "";
+      clearItemSearch.style.display = "none";
+      renderItemsTable();
+      itemSearchInput.focus();
+    });
+  }
+
+  const catSearchInput = document.getElementById("categorySearchInput");
+  const clearCatSearch = document.getElementById("clearCategorySearch");
+  if (catSearchInput) {
+    catSearchInput.addEventListener("input", (e) => {
+      categorySearchQuery = e.target.value.trim().toLowerCase();
+      if (clearCatSearch) clearCatSearch.style.display = categorySearchQuery ? "flex" : "none";
+      renderCategories();
+    });
+  }
+  if (clearCatSearch) {
+    clearCatSearch.addEventListener("click", () => {
+      catSearchInput.value = "";
+      categorySearchQuery = "";
+      clearCatSearch.style.display = "none";
+      renderCategories();
+      catSearchInput.focus();
+    });
+  }
 }
 
 // ============================================================================
@@ -524,30 +636,67 @@ function renderDashboard() {
 }
 
 // ============================================================================
-// Categories CRUD
+// Categories CRUD (Adaptive Mobile Cards + Actions)
 // ============================================================================
 function renderCategories() {
   const wrap = document.getElementById("categoriesTableWrap");
   if (menuData.length === 0) {
-    wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">📁</div><p>لا توجد أقسام بعد. اضغط "إضافة قسم" للبدء.</p></div>`;
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">📁</div><p>لا توجد أقسام بعد. اضغط "إضافة قسم جديد" للبدء.</p></div>`;
     return;
   }
+
+  let filtered = menuData;
+  if (categorySearchQuery) {
+    filtered = menuData.filter(c => 
+      c.titleAr.toLowerCase().includes(categorySearchQuery) || 
+      c.titleEn.toLowerCase().includes(categorySearchQuery) ||
+      (c.descAr && c.descAr.toLowerCase().includes(categorySearchQuery)) ||
+      (c.descEn && c.descEn.toLowerCase().includes(categorySearchQuery))
+    );
+  }
+
+  if (filtered.length === 0) {
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>لا توجد أقسام مطابقة للبحث "${esc(categorySearchQuery)}".</p></div>`;
+    return;
+  }
+
   wrap.innerHTML = `
-    <table class="data-table">
-      <thead><tr><th>#</th><th>الاسم (عربي)</th><th>الاسم (إنجليزي)</th><th>عدد الأصناف</th><th>إجراءات</th></tr></thead>
-      <tbody>${menuData.map((cat, idx) => `
-        <tr>
-          <td>${idx + 1}</td>
-          <td><span class="table-item-name">${esc(cat.titleAr)}</span><span class="table-item-sub">${esc(cat.descAr || "")}</span></td>
-          <td><span class="table-item-name">${esc(cat.titleEn)}</span><span class="table-item-sub">${esc(cat.descEn || "")}</span></td>
-          <td>${cat.items.length}</td>
-          <td><div class="table-actions">
-            <button class="action-btn edit-btn" data-cat-edit="${cat.id}" title="تعديل"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
-            <button class="action-btn delete-btn" data-cat-delete="${cat.id}" title="حذف"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-          </div></td>
-        </tr>
-      `).join("")}</tbody>
-    </table>`;
+    <div class="categories-cards-grid">
+      ${filtered.map((cat) => `
+        <div class="category-card">
+          <div class="category-card-header">
+            ${cat.heroImage 
+              ? `<img src="${esc(cat.heroImage)}" alt="${esc(cat.titleAr)}" class="category-card-thumb" onerror="this.outerHTML='<div class=\\'category-card-thumb-placeholder\\'>📁</div>'">`
+              : `<div class="category-card-thumb-placeholder">📁</div>`}
+            <div class="category-card-info">
+              <h3>${esc(cat.titleAr)}</h3>
+              <p>${esc(cat.titleEn)}</p>
+            </div>
+            <div class="cat-count-badge">${cat.items.length} صنف</div>
+          </div>
+
+          ${cat.descAr ? `<div class="item-card-desc">${esc(cat.descAr)}</div>` : ''}
+
+          <div class="item-card-footer">
+            <div class="category-card-meta">
+              ${cat.isDualPrice ? `<span class="table-badge bestseller">تسعير مزدوج</span>` : ''}
+            </div>
+            <div class="card-actions-group">
+              <button class="card-touch-btn quick-add" data-cat-add-item="${cat.id}" title="إضافة صنف لهذا القسم">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+              <button class="card-touch-btn edit" data-cat-edit="${cat.id}" title="تعديل القسم">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+              </button>
+              <button class="card-touch-btn delete" data-cat-delete="${cat.id}" title="حذف القسم">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `;
 
   // Attach events
   wrap.querySelectorAll("[data-cat-edit]").forEach(btn => {
@@ -555,6 +704,13 @@ function renderCategories() {
   });
   wrap.querySelectorAll("[data-cat-delete]").forEach(btn => {
     btn.addEventListener("click", () => deleteCategory(btn.dataset.catDelete));
+  });
+  wrap.querySelectorAll("[data-cat-add-item]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      selectedCategoryId = btn.dataset.catAddItem;
+      switchSection("items");
+      openItemModal(btn.dataset.catAddItem);
+    });
   });
 }
 
@@ -565,12 +721,12 @@ function openCategoryModal(catId = null) {
   document.getElementById("modalTitle").textContent = cat ? "تعديل القسم" : "إضافة قسم جديد";
   document.getElementById("modalBody").innerHTML = `
     <div class="form-row">
-      <div class="form-group"><label class="form-label">الاسم (عربي) *</label><input class="form-input" id="catTitleAr" value="${esc(cat?.titleAr || "")}"></div>
-      <div class="form-group"><label class="form-label">الاسم (إنجليزي) *</label><input class="form-input" id="catTitleEn" value="${esc(cat?.titleEn || "")}"></div>
+      <div class="form-group"><label class="form-label">الاسم (عربي) *</label><input class="form-input" id="catTitleAr" value="${esc(cat?.titleAr || "")}" placeholder="مثال: القهوة والمشروبات"></div>
+      <div class="form-group"><label class="form-label">الاسم (إنجليزي) *</label><input class="form-input" id="catTitleEn" value="${esc(cat?.titleEn || "")}" placeholder="e.g. Specialty Coffee"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">الوصف (عربي)</label><input class="form-input" id="catDescAr" value="${esc(cat?.descAr || "")}"></div>
-      <div class="form-group"><label class="form-label">الوصف (إنجليزي)</label><input class="form-input" id="catDescEn" value="${esc(cat?.descEn || "")}"></div>
+      <div class="form-group"><label class="form-label">الوصف (عربي)</label><input class="form-input" id="catDescAr" value="${esc(cat?.descAr || "")}" placeholder="وصف قصير للقسم"></div>
+      <div class="form-group"><label class="form-label">الوصف (إنجليزي)</label><input class="form-input" id="catDescEn" value="${esc(cat?.descEn || "")}" placeholder="Short description"></div>
     </div>
     <div class="form-group">
       <label class="form-label">صورة القسم (اختياري)</label>
@@ -590,7 +746,6 @@ function openCategoryModal(catId = null) {
     </div>
   `;
 
-  // Image upload handler
   document.getElementById("catImageFile").addEventListener("change", (e) => {
     const file = e.target.files[0];
     if (file) uploadImage(file, "catHeroImage", "catUploadProgress", "catProgressFill");
@@ -616,7 +771,9 @@ function saveCategory() {
     const cat = menuData.find(c => c.id === currentEditId);
     if (cat) Object.assign(cat, data);
   } else {
-    menuData.push({ id: generateId(), ...data, icon: "custom", items: [] });
+    const newId = generateId();
+    menuData.push({ id: newId, ...data, icon: "custom", items: [] });
+    selectedCategoryId = newId;
   }
 
   saveMenuData();
@@ -630,64 +787,148 @@ function deleteCategory(catId) {
   if (!cat) return;
   if (!confirm(`هل أنت متأكد من حذف القسم "${cat.titleAr}"؟\nسيتم حذف جميع الأصناف (${cat.items.length}) داخله.`)) return;
   menuData = menuData.filter(c => c.id !== catId);
+  if (selectedCategoryId === catId) {
+    selectedCategoryId = menuData[0]?.id || null;
+  }
   saveMenuData();
   renderCategories();
   showToast("تم حذف القسم بنجاح");
 }
 
 // ============================================================================
-// Items CRUD
+// Items CRUD (Swipeable Category Pills + Adaptive Mobile Cards)
 // ============================================================================
 function renderItems() {
-  const select = document.getElementById("itemCategoryFilter");
-  const currentVal = select.value;
-  select.innerHTML = menuData.map(cat => `<option value="${cat.id}" ${cat.id === currentVal ? 'selected' : ''}>${esc(cat.titleAr)} — ${esc(cat.titleEn)}</option>`).join("");
-
   if (menuData.length === 0) {
+    document.getElementById("categoryPillsWrap").innerHTML = "";
     document.getElementById("itemsTableWrap").innerHTML = `<div class="empty-state"><div class="empty-icon">🍽️</div><p>أضف أقسام أولاً لتتمكن من إدارة الأصناف.</p></div>`;
     return;
   }
 
+  // Ensure valid selectedCategoryId
+  if (!selectedCategoryId || !menuData.find(c => c.id === selectedCategoryId)) {
+    selectedCategoryId = menuData[0].id;
+  }
+
+  // Render Horizontal Category Pills
+  renderCategoryPills();
+
+  // Render Items List / Cards
   renderItemsTable();
-  select.onchange = renderItemsTable;
+}
+
+function renderCategoryPills() {
+  const wrap = document.getElementById("categoryPillsWrap");
+  if (!wrap) return;
+
+  wrap.innerHTML = menuData.map(cat => `
+    <button class="category-pill ${cat.id === selectedCategoryId ? 'active' : ''}" data-pill-cat="${cat.id}">
+      <span>${esc(cat.titleAr)}</span>
+      <span class="cat-pill-count">${cat.items.length}</span>
+    </button>
+  `).join("");
+
+  wrap.querySelectorAll("[data-pill-cat]").forEach(pill => {
+    pill.addEventListener("click", () => {
+      selectedCategoryId = pill.dataset.pillCat;
+      wrap.querySelectorAll(".category-pill").forEach(p => p.classList.remove("active"));
+      pill.classList.add("active");
+      pill.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+
+      // Sync select dropdown if any
+      const select = document.getElementById("itemCategoryFilter");
+      if (select) select.value = selectedCategoryId;
+
+      renderItemsTable();
+    });
+  });
 }
 
 function renderItemsTable() {
-  const catId = document.getElementById("itemCategoryFilter").value;
-  const cat = menuData.find(c => c.id === catId);
   const wrap = document.getElementById("itemsTableWrap");
+  if (!wrap) return;
 
-  if (!cat || cat.items.length === 0) {
-    wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">☕</div><p>لا توجد أصناف في هذا القسم. اضغط "إضافة صنف" للبدء.</p></div>`;
-    return;
+  let itemsToRender = [];
+  let isDual = false;
+  let activeCat = menuData.find(c => c.id === selectedCategoryId);
+
+  if (itemSearchQuery) {
+    // If searching, search across all items in all categories
+    menuData.forEach(cat => {
+      cat.items.forEach(item => {
+        const matchAr = item.nameAr && item.nameAr.toLowerCase().includes(itemSearchQuery);
+        const matchEn = item.nameEn && item.nameEn.toLowerCase().includes(itemSearchQuery);
+        const matchPrice = item.price && String(item.price).includes(itemSearchQuery);
+        const matchPrice12 = item.price12 && String(item.price12).includes(itemSearchQuery);
+        const matchPrice24 = item.price24 && String(item.price24).includes(itemSearchQuery);
+        if (matchAr || matchEn || matchPrice || matchPrice12 || matchPrice24) {
+          itemsToRender.push({ ...item, categoryId: cat.id, categoryTitleAr: cat.titleAr, isDualPrice: cat.isDualPrice });
+        }
+      });
+    });
+
+    if (itemsToRender.length === 0) {
+      wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>لا توجد أصناف مطابقة للبحث "${esc(itemSearchQuery)}".</p></div>`;
+      return;
+    }
+  } else {
+    if (!activeCat || activeCat.items.length === 0) {
+      wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">☕</div><p>لا توجد أصناف في هذا القسم. اضغط "إضافة صنف جديد" للبدء.</p></div>`;
+      return;
+    }
+    itemsToRender = activeCat.items.map(item => ({
+      ...item,
+      categoryId: activeCat.id,
+      categoryTitleAr: activeCat.titleAr,
+      isDualPrice: activeCat.isDualPrice
+    }));
   }
 
-  const isDual = cat.isDualPrice;
+  const typeIcons = {
+    coffee: "☕ قهوة",
+    hot: "🔥 ساخن",
+    cold: "🧊 بارد",
+    desserts: "🧇 حلويات"
+  };
+
   wrap.innerHTML = `
-    <table class="data-table">
-      <thead><tr>
-        <th>#</th><th>الاسم (عربي)</th><th>الاسم (إنجليزي)</th>
-        ${isDual ? '<th>سعر ١٢ قطعة</th><th>سعر ٢٤ قطعة</th>' : '<th>السعر</th>'}
-        <th>النوع</th><th>شارة</th><th>الأكثر طلباً</th><th>إجراءات</th>
-      </tr></thead>
-      <tbody>${cat.items.map((item, idx) => `
-        <tr>
-          <td>${idx + 1}</td>
-          <td><span class="table-item-name">${esc(item.nameAr)}</span>${item.descAr ? `<span class="table-item-sub">${esc(item.descAr)}</span>` : ''}</td>
-          <td><span class="table-item-name">${esc(item.nameEn)}</span>${item.descEn ? `<span class="table-item-sub">${esc(item.descEn)}</span>` : ''}</td>
-          ${isDual
-            ? `<td class="table-price">${item.price12 || 0} ج.م</td><td class="table-price">${item.price24 || 0} ج.م</td>`
-            : `<td class="table-price">${item.price || 0} ج.م</td>`}
-          <td><span class="table-badge type-${item.type || 'cold'}">${item.type || '—'}</span></td>
-          <td>${item.badgeAr ? `<span class="table-badge">${esc(item.badgeAr)}</span>` : '—'}</td>
-          <td>${item.isBestseller ? '<span class="table-badge bestseller">⭐</span>' : '—'}</td>
-          <td><div class="table-actions">
-            <button class="action-btn edit-btn" data-item-edit="${item.id}" data-cat="${catId}" title="تعديل"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
-            <button class="action-btn delete-btn" data-item-delete="${item.id}" data-cat="${catId}" title="حذف"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-          </div></td>
-        </tr>
-      `).join("")}</tbody>
-    </table>`;
+    <div class="items-cards-grid">
+      ${itemsToRender.map((item) => `
+        <div class="item-card">
+          <div class="item-card-top">
+            <div class="item-card-title-wrap">
+              <div class="item-card-name-ar">${esc(item.nameAr)}</div>
+              <div class="item-card-name-en">${esc(item.nameEn)} ${itemSearchQuery ? `• <span style="color:var(--accent-copper);">(${esc(item.categoryTitleAr)})</span>` : ''}</div>
+            </div>
+            <div class="item-card-badges">
+              <span class="table-badge type-${item.type || 'cold'}">${typeIcons[item.type] || item.type || '—'}</span>
+              ${item.isBestseller ? '<span class="table-badge bestseller">⭐ الأكثر طلباً</span>' : ''}
+              ${item.badgeAr ? `<span class="table-badge">${esc(item.badgeAr)}</span>` : ''}
+            </div>
+          </div>
+
+          ${item.descAr ? `<div class="item-card-desc">${esc(item.descAr)}</div>` : ''}
+
+          <div class="item-card-footer">
+            <div class="item-card-prices">
+              ${item.isDualPrice
+                ? `<span class="price-chip dual">١٢ ق: ${item.price12 || 0} ج.م</span><span class="price-chip dual">٢٤ ق: ${item.price24 || 0} ج.م</span>`
+                : `<span class="price-chip">${item.price || 0} ج.م</span>`}
+            </div>
+
+            <div class="card-actions-group">
+              <button class="card-touch-btn edit" data-item-edit="${item.id}" data-cat="${item.categoryId}" title="تعديل الصنف">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+              </button>
+              <button class="card-touch-btn delete" data-item-delete="${item.id}" data-cat="${item.categoryId}" title="حذف الصنف">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `;
 
   wrap.querySelectorAll("[data-item-edit]").forEach(btn => {
     btn.addEventListener("click", () => openItemModal(btn.dataset.cat, btn.dataset.itemEdit));
@@ -704,44 +945,44 @@ function openItemModal(catId, itemId = null) {
   currentEditId = itemId;
   const isDual = cat.isDualPrice;
 
-  document.getElementById("modalTitle").textContent = item ? "تعديل الصنف" : "إضافة صنف جديد";
+  document.getElementById("modalTitle").textContent = item ? "تعديل الصنف" : `إضافة صنف إلى "${cat.titleAr}"`;
   document.getElementById("modalBody").innerHTML = `
     <input type="hidden" id="itemCatId" value="${catId}">
     <div class="form-row">
-      <div class="form-group"><label class="form-label">الاسم (عربي) *</label><input class="form-input" id="itemNameAr" value="${esc(item?.nameAr || "")}"></div>
-      <div class="form-group"><label class="form-label">الاسم (إنجليزي) *</label><input class="form-input" id="itemNameEn" value="${esc(item?.nameEn || "")}"></div>
+      <div class="form-group"><label class="form-label">الاسم (عربي) *</label><input class="form-input" id="itemNameAr" value="${esc(item?.nameAr || "")}" placeholder="مثال: سبانش لاتيه"></div>
+      <div class="form-group"><label class="form-label">الاسم (إنجليزي) *</label><input class="form-input" id="itemNameEn" value="${esc(item?.nameEn || "")}" placeholder="e.g. Spanish Latte"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">الوصف (عربي)</label><input class="form-input" id="itemDescAr" value="${esc(item?.descAr || "")}"></div>
-      <div class="form-group"><label class="form-label">الوصف (إنجليزي)</label><input class="form-input" id="itemDescEn" value="${esc(item?.descEn || "")}"></div>
+      <div class="form-group"><label class="form-label">الوصف (عربي)</label><input class="form-input" id="itemDescAr" value="${esc(item?.descAr || "")}" placeholder="مكونات أو تفاصيل الصنف"></div>
+      <div class="form-group"><label class="form-label">الوصف (إنجليزي)</label><input class="form-input" id="itemDescEn" value="${esc(item?.descEn || "")}" placeholder="Ingredients / details"></div>
     </div>
     ${isDual ? `
       <div class="form-row">
-        <div class="form-group"><label class="form-label">سعر ١٢ قطعة (ج.م) *</label><input type="number" class="form-input" id="itemPrice12" value="${item?.price12 || ""}"></div>
-        <div class="form-group"><label class="form-label">سعر ٢٤ قطعة (ج.م) *</label><input type="number" class="form-input" id="itemPrice24" value="${item?.price24 || ""}"></div>
+        <div class="form-group"><label class="form-label">سعر ١٢ قطعة (ج.م) *</label><input type="number" class="form-input" id="itemPrice12" value="${item?.price12 || ""}" placeholder="مثال: 100"></div>
+        <div class="form-group"><label class="form-label">سعر ٢٤ قطعة (ج.م) *</label><input type="number" class="form-input" id="itemPrice24" value="${item?.price24 || ""}" placeholder="مثال: 180"></div>
       </div>
     ` : `
-      <div class="form-group"><label class="form-label">السعر (ج.م) *</label><input type="number" class="form-input" id="itemPrice" value="${item?.price || ""}"></div>
+      <div class="form-group"><label class="form-label">السعر (ج.م) *</label><input type="number" class="form-input" id="itemPrice" value="${item?.price || ""}" placeholder="مثال: 85"></div>
     `}
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">النوع</label>
+        <label class="form-label">نوع المشروب / الصنف</label>
         <select class="form-select-input" id="itemType">
           <option value="coffee" ${item?.type === 'coffee' ? 'selected' : ''}>☕ قهوة</option>
           <option value="hot" ${item?.type === 'hot' ? 'selected' : ''}>🔥 ساخن</option>
-          <option value="cold" ${item?.type === 'cold' ? 'selected' : ''}>🧊 بارد</option>
-          <option value="desserts" ${item?.type === 'desserts' ? 'selected' : ''}>🧇 حلويات</option>
+          <option value="cold" ${item?.type === 'cold' ? 'selected' : ''}>🧊 بارد ومثلج</option>
+          <option value="desserts" ${item?.type === 'desserts' ? 'selected' : ''}>🧇 حلويات وكيك</option>
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">الشارة (عربي)</label>
-        <input class="form-input" id="itemBadgeAr" value="${esc(item?.badgeAr || "")}" placeholder="مثال: الأكثر طلباً">
+        <label class="form-label">الشارة الترويجية (عربي)</label>
+        <input class="form-input" id="itemBadgeAr" value="${esc(item?.badgeAr || "")}" placeholder="مثال: مميز / توقيع موكا">
       </div>
     </div>
-    <div class="form-group"><label class="form-label">الشارة (إنجليزي)</label><input class="form-input" id="itemBadgeEn" value="${esc(item?.badgeEn || "")}" placeholder="e.g. Bestseller"></div>
+    <div class="form-group"><label class="form-label">الشارة (إنجليزي)</label><input class="form-input" id="itemBadgeEn" value="${esc(item?.badgeEn || "")}" placeholder="e.g. Signature / Fresh"></div>
     <div class="form-check-row">
       <input type="checkbox" class="form-checkbox" id="itemBestseller" ${item?.isBestseller ? 'checked' : ''}>
-      <label class="form-check-label" for="itemBestseller">الأكثر طلباً (يظهر في فلتر "الأكثر طلباً")</label>
+      <label class="form-check-label" for="itemBestseller">⭐ تمييز كـ "الأكثر طلباً" (يظهر في فلتر الأكثر طلباً بالمنيو)</label>
     </div>
   `;
 
@@ -789,6 +1030,7 @@ function saveItem() {
 
   saveMenuData();
   hideModal();
+  renderCategoryPills();
   renderItemsTable();
   showToast(currentEditId ? "تم تحديث الصنف بنجاح" : "تم إضافة الصنف بنجاح");
 }
@@ -801,6 +1043,7 @@ function deleteItem(catId, itemId) {
   if (!confirm(`هل أنت متأكد من حذف "${item.nameAr}"؟`)) return;
   cat.items = cat.items.filter(i => i.id !== itemId);
   saveMenuData();
+  renderCategoryPills();
   renderItemsTable();
   showToast("تم حذف الصنف بنجاح");
 }
@@ -1176,10 +1419,17 @@ document.addEventListener("DOMContentLoaded", () => {
   initTools();
 
   // Wire up Add buttons
-  document.getElementById("addCategoryBtn").addEventListener("click", () => openCategoryModal());
-  document.getElementById("addItemBtn").addEventListener("click", () => {
-    const catId = document.getElementById("itemCategoryFilter").value;
-    if (!catId) { showToast("اختر قسم أولاً", "error"); return; }
-    openItemModal(catId);
-  });
+  const addCategoryBtn = document.getElementById("addCategoryBtn");
+  if (addCategoryBtn) {
+    addCategoryBtn.addEventListener("click", () => openCategoryModal());
+  }
+
+  const addItemBtn = document.getElementById("addItemBtn");
+  if (addItemBtn) {
+    addItemBtn.addEventListener("click", () => {
+      const catId = selectedCategoryId || document.getElementById("itemCategoryFilter")?.value || menuData[0]?.id;
+      if (!catId) { showToast("أضف قسم أولاً لتتمكن من إضافة أصناف", "error"); return; }
+      openItemModal(catId);
+    });
+  }
 });
