@@ -1,4 +1,8 @@
-const menuCategories = [
+// MoKa Cafe — Customer Digital Menu Application
+import { subscribeToCloud, fetchFromCloud } from "./firebase-sync.js";
+
+// Default menu data (used as fallback if no admin edits exist)
+const DEFAULT_MENU_CATEGORIES = [
   {
     id: "coffee",
     titleAr: "القهوة",
@@ -312,7 +316,35 @@ const menuCategories = [
   }
 ];
 
+/**
+ * Load menu data from localStorage (set by admin panel), fallback to hardcoded defaults.
+ */
+function loadMenuData() {
+  try {
+    const saved = localStorage.getItem("moka_menu_data");
+    if (saved) return JSON.parse(saved);
+  } catch (e) { /* fallback to defaults */ }
+  return JSON.parse(JSON.stringify(DEFAULT_MENU_CATEGORIES));
+}
+
+function loadOfferData() {
+  try {
+    const saved = localStorage.getItem("moka_offer_data");
+    if (saved) return JSON.parse(saved);
+  } catch (e) { /* fallback */ }
+  return null;
+}
+
+function loadSettingsData() {
+  try {
+    const saved = localStorage.getItem("moka_settings");
+    if (saved) return JSON.parse(saved);
+  } catch (e) { /* fallback */ }
+  return null;
+}
+
 // App State
+let menuCategories = loadMenuData();
 let currentLang = "ar"; // "ar" | "en"
 let currentTheme = localStorage.getItem("moka_theme") || "dark";
 let activeSearchQuery = "";
@@ -432,6 +464,10 @@ function escapeHTML(str) {
  * Initialize Application
  */
 document.addEventListener("DOMContentLoaded", () => {
+  // Load initial local data for 0ms instant display
+  menuCategories = loadMenuData();
+  applyAdminData();
+
   applyTheme(currentTheme);
   renderCategoryNav();
   renderMenu();
@@ -445,7 +481,80 @@ document.addEventListener("DOMContentLoaded", () => {
   initSpecialOfferAction();
   initItemModalEvents();
   updateStaticTexts();
+
+  // Listen to Firebase Cloud for real-time updates from admin
+  initCloudSync();
 });
+
+/**
+ * Realtime live synchronization with Firebase Firestore
+ */
+function initCloudSync() {
+  subscribeToCloud((cloudData) => {
+    if (!cloudData) return;
+    let changed = false;
+    if (cloudData.menu && Array.isArray(cloudData.menu)) {
+      menuCategories = cloudData.menu;
+      localStorage.setItem("moka_menu_data", JSON.stringify(menuCategories));
+      changed = true;
+    }
+    if (cloudData.offer) {
+      localStorage.setItem("moka_offer_data", JSON.stringify(cloudData.offer));
+      changed = true;
+    }
+    if (cloudData.settings) {
+      localStorage.setItem("moka_settings", JSON.stringify(cloudData.settings));
+      changed = true;
+    }
+    if (changed) {
+      applyAdminData();
+      renderCategoryNav();
+      renderMenu();
+      updateStaticTexts();
+    }
+  });
+}
+
+/**
+ * Apply admin-edited offer data, settings (WhatsApp, socials) to the page.
+ */
+function applyAdminData() {
+  // Apply special offer edits
+  const offer = loadOfferData();
+  if (offer) {
+    const offerTitle = document.querySelector('[data-i18n="specialOfferTitle"]');
+    const offerDesc = document.querySelector('[data-i18n="specialOfferDesc"]');
+    const offerPrice = document.querySelector('[data-i18n="specialOfferPrice"]');
+    const offerOrig = document.querySelector('[data-i18n="specialOfferOriginal"]');
+    const offerImg = document.querySelector('.offer-img');
+    if (offerTitle) offerTitle.textContent = offer.titleAr || offerTitle.textContent;
+    if (offerDesc) offerDesc.textContent = offer.descAr || offerDesc.textContent;
+    if (offerPrice) offerPrice.textContent = offer.priceAr || offerPrice.textContent;
+    if (offerOrig) offerOrig.textContent = offer.originalAr || offerOrig.textContent;
+    if (offerImg && offer.image) offerImg.src = offer.image;
+
+    // Also update the English text in uiText
+    if (offer.titleEn) uiText.en.specialOfferTitle = offer.titleEn;
+    if (offer.descEn) uiText.en.specialOfferDesc = offer.descEn;
+    if (offer.priceEn) uiText.en.specialOfferPrice = offer.priceEn;
+    if (offer.originalEn) uiText.en.specialOfferOriginal = offer.originalEn;
+    if (offer.titleAr) uiText.ar.specialOfferTitle = offer.titleAr;
+    if (offer.descAr) uiText.ar.specialOfferDesc = offer.descAr;
+    if (offer.priceAr) uiText.ar.specialOfferPrice = offer.priceAr;
+    if (offer.originalAr) uiText.ar.specialOfferOriginal = offer.originalAr;
+  }
+
+  // Apply settings (social links, WhatsApp)
+  const settings = loadSettingsData();
+  if (settings) {
+    const waLink = document.querySelector('a[href*="wa.me"]');
+    if (waLink && settings.whatsappNumber) waLink.href = `https://wa.me/${settings.whatsappNumber}`;
+    const phoneLink = document.querySelector('a[href^="tel:"]');
+    if (phoneLink && settings.phoneNumber) phoneLink.href = `tel:${settings.phoneNumber}`;
+    const igLink = document.querySelector('a[href*="instagram"]');
+    if (igLink && settings.instagramUrl) igLink.href = settings.instagramUrl;
+  }
+}
 
 /**
  * Apply Dark / Light Theme
@@ -1221,8 +1330,9 @@ function sendWhatsAppOrder() {
   message += `شكراً لاختياركم موكا كافيه! ❤️`;
 
   const encoded = encodeURIComponent(message);
-  // Official Cafe WhatsApp Number (Replace with actual phone number if provided)
-  const phone = "201000000000";
+  // Use admin-configured WhatsApp number, fallback to default
+  const settings = loadSettingsData();
+  const phone = (settings && settings.whatsappNumber) || "201000000000";
   window.open(`https://wa.me/${phone}?text=${encoded}`, "_blank");
 }
 
