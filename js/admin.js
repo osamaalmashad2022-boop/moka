@@ -773,7 +773,17 @@ function openCategoryModal(catId = null) {
         <input type="file" accept="image/*" id="catImageFile">
       </div>
       <div class="upload-progress" id="catUploadProgress"><div class="progress-bar-track"><div class="progress-bar-fill" id="catProgressFill"></div></div></div>
-      ${cat?.heroImage ? `<div class="current-image-preview"><img src="${esc(cat.heroImage)}" alt=""><span class="img-name">${esc(cat.heroImage.slice(0, 40))}...</span></div>` : ''}
+      <div id="catImagePreviewContainer">
+        ${cat?.heroImage ? `
+          <div class="current-image-preview">
+            <img src="${esc(cat.heroImage)}" alt="Category Image" id="catPreviewImgEl">
+            <span class="img-name">${esc(cat.heroImage.slice(0, 35))}...</span>
+            <button type="button" class="btn-remove-img" id="removeCatImgBtn" title="حذف الصورة الحالية">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              <span>حذف الصورة</span>
+            </button>
+          </div>` : ''}
+      </div>
     </div>
     <div class="form-check-row">
       <input type="checkbox" class="form-checkbox" id="catIsDualPrice" ${cat?.isDualPrice ? 'checked' : ''}>
@@ -781,9 +791,22 @@ function openCategoryModal(catId = null) {
     </div>
   `;
 
+  const attachCatRemoveBtn = () => {
+    document.getElementById("removeCatImgBtn")?.addEventListener("click", () => {
+      const heroInput = document.getElementById("catHeroImage");
+      if (heroInput) heroInput.value = "";
+      const fileInput = document.getElementById("catImageFile");
+      if (fileInput) fileInput.value = "";
+      const previewContainer = document.getElementById("catImagePreviewContainer");
+      if (previewContainer) previewContainer.innerHTML = "";
+      showToast("تم إزالة صورة القسم");
+    });
+  };
+  attachCatRemoveBtn();
+
   document.getElementById("catImageFile").addEventListener("change", (e) => {
     const file = e.target.files[0];
-    if (file) uploadImage(file, "catHeroImage", "catUploadProgress", "catProgressFill");
+    if (file) uploadImage(file, "catHeroImage", "catUploadProgress", "catProgressFill", "catImagePreviewContainer", attachCatRemoveBtn);
   });
 
   showModal(() => saveCategory());
@@ -1106,12 +1129,21 @@ function renderOfferEditor() {
   const wrap = document.getElementById("offerEditorCard");
   if (!wrap) return;
 
+  const currentImg = offerData.image || "assets/images/special_offers.jpg";
+  const isDefaultImg = !offerData.image || offerData.image === "assets/images/special_offers.jpg";
+
   wrap.innerHTML = `
     <div class="offer-preview">
-      <img src="${esc(offerData.image || 'assets/images/special_offers.jpg')}" alt="Offer" class="offer-preview-img" id="offerPreviewImg">
+      <img src="${esc(currentImg)}" alt="Offer" class="offer-preview-img" id="offerPreviewImg">
       <div class="offer-preview-info">
         <h4>${esc(offerData.titleAr)}</h4>
         <p>${esc(offerData.descAr)}</p>
+        <div style="margin-top: 8px;">
+          <button type="button" class="btn-remove-img" id="removeOfferImgBtn" title="حذف صورة العرض وإعادة التعيين">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            <span>حذف الصورة</span>
+          </button>
+        </div>
       </div>
     </div>
     <div class="form-row">
@@ -1143,6 +1175,18 @@ function renderOfferEditor() {
     </div>
     <button class="btn-primary" id="saveOfferBtn" style="align-self:flex-start;padding:12px 32px;">حفظ التعديلات</button>
   `;
+
+  document.getElementById("removeOfferImgBtn")?.addEventListener("click", () => {
+    const offerImgInput = document.getElementById("offerImage");
+    if (offerImgInput) offerImgInput.value = "";
+    const fileInput = document.getElementById("offerImageFile");
+    if (fileInput) fileInput.value = "";
+    const previewEl = document.getElementById("offerPreviewImg");
+    if (previewEl) previewEl.src = "assets/images/special_offers.jpg";
+    offerData.image = "";
+    saveOfferData();
+    showToast("تم حذف صورة العرض");
+  });
 
   document.getElementById("offerImageFile").addEventListener("change", (e) => {
     const file = e.target.files[0];
@@ -1259,7 +1303,7 @@ function renderSettings() {
 // ============================================================================
 // Cloudinary Direct Cloud Image Upload & Compression
 // ============================================================================
-async function uploadImage(file, targetInputId, progressWrapperId, progressFillId) {
+async function uploadImage(file, targetInputId, progressWrapperId, progressFillId, previewContainerId = null, onRemoveAttach = null) {
   if (!file) return;
 
   const progressWrap = document.getElementById(progressWrapperId);
@@ -1269,6 +1313,33 @@ async function uploadImage(file, targetInputId, progressWrapperId, progressFillI
 
   const cloudName = settingsData.cloudinaryCloudName || "";
   const uploadPreset = settingsData.cloudinaryUploadPreset || "";
+
+  const renderPreviewAfterUpload = (imgUrl) => {
+    const input = document.getElementById(targetInputId);
+    if (input) input.value = imgUrl;
+
+    const offerPreview = document.getElementById("offerPreviewImg");
+    if (offerPreview && targetInputId === "offerImage") {
+      offerPreview.src = imgUrl;
+    }
+
+    if (previewContainerId) {
+      const container = document.getElementById(previewContainerId);
+      if (container) {
+        container.innerHTML = `
+          <div class="current-image-preview">
+            <img src="${esc(imgUrl)}" alt="Uploaded Image">
+            <span class="img-name">${esc(imgUrl.slice(0, 35))}...</span>
+            <button type="button" class="btn-remove-img" id="removeCatImgBtn" title="حذف الصورة الحالية">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              <span>حذف الصورة</span>
+            </button>
+          </div>
+        `;
+        if (typeof onRemoveAttach === "function") onRemoveAttach();
+      }
+    }
+  };
 
   // 1. Direct Cloudinary Upload
   if (cloudName && uploadPreset) {
@@ -1298,14 +1369,7 @@ async function uploadImage(file, targetInputId, progressWrapperId, progressFillI
       }
 
       if (data.secure_url) {
-        const input = document.getElementById(targetInputId);
-        if (input) {
-          input.value = data.secure_url;
-          const previewImg = document.getElementById("offerPreviewImg");
-          if (previewImg && targetInputId === "offerImage") {
-            previewImg.src = data.secure_url;
-          }
-        }
+        renderPreviewAfterUpload(data.secure_url);
 
         if (progressFill) progressFill.style.width = "100%";
         setTimeout(() => {
@@ -1326,12 +1390,8 @@ async function uploadImage(file, targetInputId, progressWrapperId, progressFillI
   // 2. Fallback: local compression
   try {
     const compressed = await compressImage(file);
-    const input = document.getElementById(targetInputId);
-    if (input) {
-      input.value = compressed;
-      const previewImg = document.getElementById("offerPreviewImg");
-      if (previewImg && targetInputId === "offerImage") previewImg.src = compressed;
-    }
+    renderPreviewAfterUpload(compressed);
+
     if (progressFill) progressFill.style.width = "100%";
     setTimeout(() => {
       if (progressWrap) progressWrap.classList.remove("active");

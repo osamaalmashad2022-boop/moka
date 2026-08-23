@@ -1442,25 +1442,53 @@ a {
   display: flex;
   align-items: center;
   gap: var(--space-md);
-  padding: var(--space-sm);
+  padding: 10px;
   background: var(--surface-elevated);
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);
   margin-top: var(--space-sm);
+  flex-wrap: wrap;
 }
 
 .current-image-preview img {
-  width: 60px;
-  height: 60px;
+  width: 54px;
+  height: 54px;
   border-radius: var(--radius-xs);
   object-fit: cover;
+  border: 1px solid var(--border-subtle);
 }
 
 .current-image-preview .img-name {
   flex: 1;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
   word-break: break-all;
+  min-width: 120px;
+}
+
+.btn-remove-img {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  color: var(--accent-red);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.btn-remove-img:hover {
+  background: rgba(239, 68, 68, 0.22);
+  border-color: var(--accent-red);
+}
+
+.btn-remove-img:active {
+  transform: scale(0.94);
 }
 
 /* Settings Grid */
