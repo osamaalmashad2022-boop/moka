@@ -4,6 +4,8 @@
   "description": "A modern, high-performance, mobile-first digital menu web application designed for **MoKa Cafe**. Built with pure Vanilla HTML5, CSS3, and JavaScript with complete bilingual support (Arabic RTL & English LTR).",
   "main": "index.js",
   "scripts": {
+    "start": "python -m http.server 3000",
+    "serve": "python -m http.server 3000",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

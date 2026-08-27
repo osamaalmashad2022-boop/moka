@@ -394,6 +394,16 @@ const uiText = {
     finalTotalLabel: "المجموع الكلي:",
     whatsappOrderBtn: "إرسال الطلب عبر واتساب",
     showWaiterBtn: "عرض الكارت للويتر",
+    waiterStatusText: "طلب جاهز للتسجيل والتنفيذ",
+    waiterTableLabel: "رقم الطاولة / الموقع:",
+    waiterHintText: "يرجى إبراز الشاشة للويتر لتأكيد وتسجيل طلبك",
+    waiterItemsTitle: "الأصناف المطلوبة",
+    waiterGeneralNotesTitle: "ملاحظات إضافية:",
+    waiterTotalLabel: "المجموع الكلي للحساب:",
+    waiterDoneBtn: "تم تسجيل الطلب من الويتر",
+    waiterEditBtn: "تعديل الطلب",
+    waiterCopyBtn: "نسخ الملخص",
+    waiterDoneSuccess: "تم تأكيد طلبك بنجاح! نتمنى لك وقتاً ممتعاً في موكا كافيه ❤️",
     sizeLabel: "اختر الحجم / الكمية:",
     sugarLabel: "مستوى السكر:",
     notesLabel: "ملاحظات إضافية:",
@@ -436,8 +446,17 @@ const uiText = {
     clearOrderBtn: "Clear All",
     tableNumLabel: "Table # / Special Notes:",
     finalTotalLabel: "Grand Total:",
-    whatsappOrderBtn: "Send Order via WhatsApp",
     showWaiterBtn: "Show Card to Waiter",
+    waiterStatusText: "Order Ready to Serve",
+    waiterTableLabel: "Table # / Location:",
+    waiterHintText: "Please show this screen to the waiter",
+    waiterItemsTitle: "Items Ordered",
+    waiterGeneralNotesTitle: "Special Notes:",
+    waiterTotalLabel: "Grand Total:",
+    waiterDoneBtn: "Order Confirmed by Waiter",
+    waiterEditBtn: "Edit Order",
+    waiterCopyBtn: "Copy Summary",
+    waiterDoneSuccess: "Your order is confirmed! Enjoy your time at MoKa Cafe ❤️",
     sizeLabel: "Select Portion / Size:",
     sugarLabel: "Sugar Level:",
     notesLabel: "Additional Notes:",
@@ -1005,9 +1024,56 @@ function openItemCustomModal(item, preselectedPortion = "12") {
   if (notesInput) notesInput.value = "";
   if (qtyVal) qtyVal.textContent = "1";
 
-  // Hide or show sugar group (relevant for coffee/tea/drinks)
-  const isDrink = item.type === "coffee" || item.type === "hot" || item.type === "cold";
-  if (sugarGroup) sugarGroup.style.display = isDrink ? "flex" : "none";
+  // Sugar options based on beverage category (coffee vs juices vs non-customizable items)
+  let categoryId = item.categoryId;
+  if (!categoryId) {
+    const parentCat = menuCategories.find(c => c.items && c.items.some(it => it.id === item.id));
+    if (parentCat) categoryId = parentCat.id;
+  }
+
+  // Sugar options: applied strictly to all coffee only, removed from everything else
+  const isCoffee = categoryId === "coffee" ||
+                   categoryId === "iced_drinks" ||
+                   item.type === "coffee" ||
+                   (item.nameAr && (item.nameAr.includes("قهوة") || item.nameAr.includes("نسكافيه")));
+  const sugarOptionsRow = document.getElementById("customSugarOptions");
+
+  if (sugarGroup && sugarOptionsRow) {
+    if (isCoffee) {
+      sugarGroup.style.display = "flex";
+      modalSelectedSugar = isAr ? "مضبوط" : "Medium";
+      const sugarOptions = isAr ? [
+        { label: "مضبوط", val: "مضبوط" },
+        { label: "سادة", val: "بدون سكر (سادة)" },
+        { label: "مانو", val: "سكر خفيف (مانو)" },
+        { label: "زيادة", val: "زيادة" }
+      ] : [
+        { label: "Medium", val: "Medium" },
+        { label: "Plain / Black", val: "Plain" },
+        { label: "Light", val: "Light" },
+        { label: "Extra", val: "Extra" }
+      ];
+
+      sugarOptionsRow.innerHTML = sugarOptions.map(opt => `
+        <button type="button" class="option-pill ${opt.val === modalSelectedSugar ? 'active' : ''}" data-sugar="${escapeHTML(opt.val)}">
+          ${escapeHTML(opt.label)}
+        </button>
+      `).join("");
+
+      sugarOptionsRow.querySelectorAll(".option-pill").forEach(pill => {
+        pill.addEventListener("click", () => {
+          sugarOptionsRow.querySelectorAll(".option-pill").forEach(p => p.classList.remove("active"));
+          pill.classList.add("active");
+          modalSelectedSugar = pill.getAttribute("data-sugar");
+        });
+      });
+    } else {
+      // Completely hidden for all other items (juices, tea, herbs, smoothies, desserts, etc.)
+      sugarGroup.style.display = "none";
+      modalSelectedSugar = "";
+      sugarOptionsRow.innerHTML = "";
+    }
+  }
 
   // Handle Dual Pricing (e.g. Mini Pancakes)
   if (item.isDualPrice && sizeGroup && sizeOptions) {
@@ -1035,17 +1101,6 @@ function openItemCustomModal(item, preselectedPortion = "12") {
   } else if (sizeGroup) {
     sizeGroup.style.display = "none";
   }
-
-  // Sugar option pills
-  document.querySelectorAll("#customSugarGroup .option-pill").forEach(pill => {
-    pill.classList.remove("active");
-    if (pill.getAttribute("data-sugar") === "مضبوط") pill.classList.add("active");
-    pill.onclick = () => {
-      document.querySelectorAll("#customSugarGroup .option-pill").forEach(p => p.classList.remove("active"));
-      pill.classList.add("active");
-      modalSelectedSugar = pill.getAttribute("data-sugar");
-    };
-  });
 
   updateModalPrice();
   modalBackdrop.classList.add("active");
@@ -1124,8 +1179,13 @@ function initItemModalEvents() {
           : (isAr ? uiText.ar.p12Label : uiText.en.p12Label);
       }
 
-      if (currentModalItem.type === "coffee" || currentModalItem.type === "hot" || currentModalItem.type === "cold") {
-        optionText += (optionText ? " • " : "") + (isAr ? `سكر ${modalSelectedSugar}` : `Sugar: ${modalSelectedSugar}`);
+      const sugarGroup = document.getElementById("customSugarGroup");
+      const isSugarVisible = sugarGroup && sugarGroup.style.display !== "none";
+      if (isSugarVisible && modalSelectedSugar) {
+        const sugarText = (modalSelectedSugar.startsWith("سكر") || modalSelectedSugar.startsWith("بدون"))
+          ? modalSelectedSugar
+          : (isAr ? `سكر ${modalSelectedSugar}` : `Sugar: ${modalSelectedSugar}`);
+        optionText += (optionText ? " • " : "") + sugarText;
       }
 
       addToOrder({
@@ -1154,7 +1214,6 @@ function initOrderSystem() {
   const closeDrawerBtn = document.getElementById("closeOrderDrawerBtn");
   const drawerBackdrop = document.getElementById("orderDrawerBackdrop");
   const clearBtn = document.getElementById("clearOrderBtn");
-  const whatsappBtn = document.getElementById("sendWhatsAppOrderBtn");
   const showWaiterBtn = document.getElementById("showWaiterCardBtn");
 
   if (openDrawerBtn && drawerBackdrop) {
@@ -1187,12 +1246,85 @@ function initOrderSystem() {
     });
   }
 
-  if (whatsappBtn) {
-    whatsappBtn.addEventListener("click", sendWhatsAppOrder);
-  }
-
   if (showWaiterBtn) {
     showWaiterBtn.addEventListener("click", showWaiterCardView);
+  }
+
+  // Dedicated Waiter Card Modal Interactions
+  const waiterBackdrop = document.getElementById("waiterCardBackdrop");
+  const closeWaiterBtn = document.getElementById("closeWaiterCardBtn");
+  const backToEditBtn = document.getElementById("waiterBackToEditBtn");
+  const waiterDoneBtn = document.getElementById("waiterOrderDoneBtn");
+  const waiterCopyBtn = document.getElementById("waiterCopyBtn");
+
+  if (closeWaiterBtn && waiterBackdrop) {
+    closeWaiterBtn.addEventListener("click", () => {
+      waiterBackdrop.classList.remove("active");
+      waiterBackdrop.setAttribute("aria-hidden", "true");
+    });
+
+    waiterBackdrop.addEventListener("click", (e) => {
+      if (e.target === waiterBackdrop) {
+        waiterBackdrop.classList.remove("active");
+        waiterBackdrop.setAttribute("aria-hidden", "true");
+      }
+    });
+  }
+
+  if (backToEditBtn && waiterBackdrop && drawerBackdrop) {
+    backToEditBtn.addEventListener("click", () => {
+      waiterBackdrop.classList.remove("active");
+      waiterBackdrop.setAttribute("aria-hidden", "true");
+      renderOrderDrawer();
+      drawerBackdrop.classList.add("active");
+      drawerBackdrop.setAttribute("aria-hidden", "false");
+    });
+  }
+
+  if (waiterDoneBtn && waiterBackdrop) {
+    waiterDoneBtn.addEventListener("click", () => {
+      const isAr = currentLang === "ar";
+      orderItems = [];
+      updateOrderUI();
+      waiterBackdrop.classList.remove("active");
+      waiterBackdrop.setAttribute("aria-hidden", "true");
+      showAppToast(isAr ? uiText.ar.waiterDoneSuccess : uiText.en.waiterDoneSuccess);
+    });
+  }
+
+  if (waiterCopyBtn) {
+    waiterCopyBtn.addEventListener("click", () => {
+      const isAr = currentLang === "ar";
+      const currency = isAr ? uiText.ar.currency : uiText.en.currency;
+      const tableInput = document.getElementById("tableNumberInput");
+      const tableOrNotes = tableInput ? tableInput.value.trim() : "";
+      const totalAmount = orderItems.reduce((acc, item) => acc + (item.price * item.qty), 0);
+      const refEl = document.getElementById("waiterOrderRef");
+      const refText = refEl ? refEl.textContent : "";
+
+      let summary = `${isAr ? '☕ كارت طلب موكا كافيه' : '☕ MoKa Cafe Waiter Card'}\n`;
+      if (refText) summary += `${refText}\n`;
+      if (tableOrNotes) summary += `${isAr ? '📍 الطاولة / الملاحظات: ' : '📍 Table / Notes: '}${tableOrNotes}\n`;
+      summary += `-----------------------------\n`;
+
+      orderItems.forEach((item, idx) => {
+        const name = isAr ? item.nameAr : (item.nameEn || item.nameAr);
+        summary += `${idx + 1}. ${name} × ${item.qty} (${item.price * item.qty} ${currency})\n`;
+        if (item.customOption) summary += `   ↳ ${item.customOption}\n`;
+        if (item.notes) summary += `   ↳ ${isAr ? 'ملاحظة: ' : 'Note: '}${item.notes}\n`;
+      });
+
+      summary += `-----------------------------\n`;
+      summary += `${isAr ? '💰 المجموع الكلي: ' : '💰 Grand Total: '}${totalAmount} ${currency}`;
+
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(summary).then(() => {
+          showAppToast(isAr ? uiText.ar.copiedAlert : uiText.en.copiedAlert);
+        });
+      } else {
+        showAppToast(isAr ? uiText.ar.copiedAlert : uiText.en.copiedAlert);
+      }
+    });
   }
 }
 
@@ -1299,74 +1431,136 @@ function renderOrderDrawer() {
   }).join("");
 }
 
+
+
+let currentOrderSessionId = null;
+
 /**
- * WhatsApp Order Message Dispatcher
+ * Toast Notification Utility
  */
-function sendWhatsAppOrder() {
-  if (orderItems.length === 0) return;
-
-  const isAr = currentLang === "ar";
-  const currency = isAr ? uiText.ar.currency : uiText.en.currency;
-  const tableInput = document.getElementById("tableNumberInput");
-  const tableOrNotes = tableInput ? tableInput.value.trim() : "";
-
-  const totalAmount = orderItems.reduce((acc, item) => acc + (item.price * item.qty), 0);
-
-  let message = `☕ *طلب جديد من قائمة موكا كافيه الرقمية*\n`;
-  message += `-----------------------------\n`;
-
-  if (tableOrNotes) {
-    message += `📍 *الطاولة / ملاحظات:* ${tableOrNotes}\n`;
-    message += `-----------------------------\n`;
+function showAppToast(message) {
+  let toast = document.getElementById("appGlobalToast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "appGlobalToast";
+    toast.className = "app-toast";
+    document.body.appendChild(toast);
   }
-
-  orderItems.forEach((item, i) => {
-    const name = isAr ? item.nameAr : item.nameEn;
-    message += `${i + 1}. *${name}* × ${item.qty}\n`;
-    if (item.customOption) message += `   ↳ _${item.customOption}_\n`;
-    if (item.notes) message += `   ↳ _ملاحظة: ${item.notes}_\n`;
-    message += `   ↳ السعر: ${item.price * item.qty} ${currency}\n`;
-  });
-
-  message += `-----------------------------\n`;
-  message += `💰 *المجموع الكلي:* ${totalAmount} ${currency}\n`;
-  message += `شكراً لاختياركم موكا كافيه! ❤️`;
-
-  const encoded = encodeURIComponent(message);
-  // Use admin-configured WhatsApp number, fallback to default
-  const settings = loadSettingsData();
-  const phone = (settings && settings.whatsappNumber) || "201000000000";
-  window.open(`https://wa.me/${phone}?text=${encoded}`, "_blank");
+  toast.textContent = message;
+  toast.classList.add("show");
+  if (window._toastTimeout) clearTimeout(window._toastTimeout);
+  window._toastTimeout = setTimeout(() => {
+    toast.classList.remove("show");
+  }, 3000);
 }
 
 /**
- * Show Waiter Card View
+ * Show Waiter Card View (Dedicated Professional Digital Screen)
  */
 function showWaiterCardView() {
-  if (orderItems.length === 0) return;
-
   const isAr = currentLang === "ar";
+  if (orderItems.length === 0) {
+    showAppToast(isAr ? uiText.ar.emptyOrderText : uiText.en.emptyOrderText);
+    return;
+  }
+
   const currency = isAr ? uiText.ar.currency : uiText.en.currency;
   const tableInput = document.getElementById("tableNumberInput");
   const tableOrNotes = tableInput ? tableInput.value.trim() : "";
   const totalAmount = orderItems.reduce((acc, item) => acc + (item.price * item.qty), 0);
+  const totalQty = orderItems.reduce((acc, item) => acc + item.qty, 0);
 
-  let summary = `${isAr ? '☕ ملخص طلب موكا كافيه' : '☕ MoKa Cafe Order Summary'}\n`;
-  if (tableOrNotes) summary += `${isAr ? 'الطاولة: ' : 'Table: '}${tableOrNotes}\n\n`;
+  // Generate or retain order reference code
+  if (!currentOrderSessionId) {
+    currentOrderSessionId = "MK-" + Math.floor(1000 + Math.random() * 9000);
+  }
 
-  orderItems.forEach((item) => {
-    summary += `• ${isAr ? item.nameAr : item.nameEn} × ${item.qty} (${item.price * item.qty} ${currency})\n`;
-    if (item.customOption) summary += `  [${item.customOption}]\n`;
-  });
+  const refEl = document.getElementById("waiterOrderRef");
+  if (refEl) {
+    refEl.textContent = `${isAr ? 'طلب' : 'Order'} #${currentOrderSessionId}`;
+  }
 
-  summary += `\n${isAr ? 'الإجمالي: ' : 'Total: '}${totalAmount} ${currency}`;
+  // Current order timestamp
+  const timeEl = document.getElementById("waiterOrderTime");
+  if (timeEl) {
+    const now = new Date();
+    timeEl.textContent = now.toLocaleTimeString(isAr ? "ar-EG" : "en-US", { hour: "2-digit", minute: "2-digit" });
+  }
 
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(summary).then(() => {
-      alert(isAr ? uiText.ar.copiedAlert : uiText.en.copiedAlert);
-    });
-  } else {
-    alert(summary);
+  // Table number or default label
+  const tableDisplay = document.getElementById("waiterTableDisplay");
+  if (tableDisplay) {
+    if (tableOrNotes) {
+      tableDisplay.textContent = tableOrNotes;
+    } else {
+      tableDisplay.textContent = isAr ? "طلب داخل الكافيه" : "Dine-in Order";
+    }
+  }
+
+  // Table general notes callout (only if actual custom notes exist beyond just table designation)
+  const notesBox = document.getElementById("waiterGeneralNotesBox");
+  const notesContent = document.getElementById("waiterGeneralNotesText");
+  if (notesBox && notesContent) {
+    const isJustTable = /^(طاولة|table|takeaway|سفري|تيك\s*اواي|\d+)/i.test(tableOrNotes.trim()) && tableOrNotes.length <= 15;
+    if (tableOrNotes && !isJustTable) {
+      notesBox.classList.add("active");
+      notesContent.textContent = tableOrNotes;
+    } else {
+      notesBox.classList.remove("active");
+    }
+  }
+
+  // Render items in Waiter Card
+  const itemsList = document.getElementById("waiterItemsList");
+  if (itemsList) {
+    itemsList.innerHTML = orderItems.map((item) => {
+      const name = isAr ? item.nameAr : (item.nameEn || item.nameAr);
+      const subName = isAr ? (item.nameEn || "") : (item.nameAr || "");
+      return `
+        <div class="waiter-item-row">
+          <div class="waiter-item-main">
+            <div class="waiter-item-name-wrap">
+              <span class="waiter-item-qty-tag">×${item.qty}</span>
+              <div style="display:flex; flex-direction:column; min-width:0;">
+                <span class="waiter-item-title">${escapeHTML(name)}</span>
+                ${subName ? `<span style="font-size:0.72rem; color:var(--text-muted);">${escapeHTML(subName)}</span>` : ""}
+              </div>
+            </div>
+            <span class="waiter-item-price">${item.price * item.qty} <small style="font-size:0.75rem; font-weight:600;">${escapeHTML(currency)}</small></span>
+          </div>
+          ${(item.customOption || item.notes) ? `
+            <div class="waiter-item-sub">
+              ${item.customOption ? `<span class="waiter-item-pill">${escapeHTML(item.customOption)}</span>` : ""}
+              ${item.notes ? `<div class="waiter-item-note-callout">📝 <strong>${isAr ? 'ملاحظة:' : 'Note:'}</strong> ${escapeHTML(item.notes)}</div>` : ""}
+            </div>
+          ` : ""}
+        </div>
+      `;
+    }).join("");
+  }
+
+  // Total items count & grand total
+  const countBadge = document.getElementById("waiterItemsCountBadge");
+  if (countBadge) {
+    countBadge.textContent = isAr ? `${totalQty} أصناف` : `${totalQty} Items`;
+  }
+
+  const grandTotalEl = document.getElementById("waiterGrandTotalDisplay");
+  if (grandTotalEl) {
+    grandTotalEl.textContent = `${totalAmount} ${currency}`;
+  }
+
+  // Close Order Drawer if open and show Waiter Card Modal
+  const drawerBackdrop = document.getElementById("orderDrawerBackdrop");
+  if (drawerBackdrop) {
+    drawerBackdrop.classList.remove("active");
+    drawerBackdrop.setAttribute("aria-hidden", "true");
+  }
+
+  const waiterBackdrop = document.getElementById("waiterCardBackdrop");
+  if (waiterBackdrop) {
+    waiterBackdrop.classList.add("active");
+    waiterBackdrop.setAttribute("aria-hidden", "false");
   }
 }
 
