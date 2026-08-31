@@ -2284,9 +2284,57 @@ body.light-mode .floating-order-bar {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  font-size: 0.75rem;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
   color: var(--text-muted);
+}
+
+.developer-credit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.developer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  background: rgba(196, 155, 99, 0.1);
+  border: 1px solid rgba(196, 155, 99, 0.3);
+  color: var(--accent-copper);
+  font-weight: 600;
+  font-size: 0.82rem;
+  letter-spacing: 0.3px;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+.developer-link:hover {
+  background: rgba(37, 211, 102, 0.15);
+  border-color: #25d366;
+  color: #25d366;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.2);
+}
+
+.developer-link .dev-wa-icon {
+  width: 15px;
+  height: 15px;
+  color: #25d366;
+  flex-shrink: 0;
+  transition: transform var(--transition-fast);
+}
+
+.developer-link:hover .dev-wa-icon {
+  transform: scale(1.15);
 }
 
 /* ==========================================================================

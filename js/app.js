@@ -113,6 +113,7 @@ const uiText = {
     confirmAddBtn: "إضافة إلى الطلب",
     rightsReserved: "جميع الحقوق محفوظة © موكا كافيه",
     craftedWith: "صُنع بـ ❤️ لزبائن موكا كافيه",
+    developedBy: "تطوير وبرمجة:",
     emptyOrderText: "سلة طلبك فارغة حالياً. اضغط على أي صنف لإضافته!",
     copiedAlert: "تم نسخ ملخص الطلب بنجاح!"
   },
@@ -166,6 +167,7 @@ const uiText = {
     confirmAddBtn: "Add to Order",
     rightsReserved: "All rights reserved © MoKa Cafe",
     craftedWith: "Crafted with ❤️ for MoKa Cafe guests",
+    developedBy: "Developed by:",
     emptyOrderText: "Your order is empty. Tap on any item to add it!",
     copiedAlert: "Order summary copied to clipboard!"
   }
@@ -259,7 +261,7 @@ function applyAdminData() {
   // Apply settings (social links, WhatsApp)
   const settings = loadSettingsData();
   if (settings) {
-    const waLink = document.querySelector('a[href*="wa.me"]');
+    const waLink = document.getElementById('cafeWhatsAppLink') || document.querySelector('.social-links-row a[aria-label="WhatsApp"]');
     if (waLink && settings.whatsappNumber) waLink.href = `https://wa.me/${settings.whatsappNumber}`;
     const phoneLink = document.querySelector('a[href^="tel:"]');
     if (phoneLink && settings.phoneNumber) phoneLink.href = `tel:${settings.phoneNumber}`;
