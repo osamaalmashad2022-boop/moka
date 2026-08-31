@@ -251,15 +251,32 @@ function handleKeypadPress(key) {
   }
 }
 
+function performLogout() {
+  sessionStorage.removeItem("moka_admin_auth");
+  currentPinInput = "";
+  updatePinDisplay();
+  const loginError = document.getElementById("loginError");
+  if (loginError) loginError.textContent = "";
+  const loginScreen = document.getElementById("loginScreen");
+  const adminLayout = document.getElementById("adminLayout");
+  if (loginScreen) loginScreen.style.display = "flex";
+  if (adminLayout) adminLayout.style.display = "none";
+  document.getElementById("adminSidebar")?.classList.remove("open");
+  document.getElementById("sidebarOverlay")?.classList.remove("active");
+  showToast("تم تسجيل الخروج بنجاح", "info");
+}
+
 function initLogin() {
   // Check if already authenticated in session
   if (sessionStorage.getItem("moka_admin_auth") === "true") {
     document.getElementById("loginScreen").style.display = "none";
     document.getElementById("adminLayout").style.display = "flex";
-    return;
+  } else {
+    document.getElementById("loginScreen").style.display = "flex";
+    document.getElementById("adminLayout").style.display = "none";
   }
 
-  // Keypad touch listeners
+  // Keypad touch listeners (Always initialized so they work after logout)
   const keypad = document.getElementById("pinKeypad");
   if (keypad) {
     keypad.querySelectorAll(".keypad-btn").forEach(btn => {
@@ -284,16 +301,14 @@ function initLogin() {
     }
   });
 
-  const logoutBtn = document.getElementById("logoutBtn");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => {
-      sessionStorage.removeItem("moka_admin_auth");
-      currentPinInput = "";
-      updatePinDisplay();
-      document.getElementById("loginScreen").style.display = "flex";
-      document.getElementById("adminLayout").style.display = "none";
-    });
-  }
+  // Global event listener for all logout buttons across sidebar, header, and settings
+  document.addEventListener("click", (e) => {
+    const logoutTarget = e.target.closest(".logout-btn, #logoutBtn, [data-action='logout']");
+    if (logoutTarget) {
+      e.preventDefault();
+      performLogout();
+    }
+  });
 }
 
 // ============================================================================
@@ -1065,6 +1080,21 @@ function renderSettings() {
           <div class="form-group"><label class="form-label">تأكيد رمز PIN</label><input type="password" maxlength="6" class="form-input" id="setConfirmPin" placeholder="أعد كتابة الرمز (٦ أرقام)" inputmode="numeric"></div>
         </div>
         <button class="btn-primary" id="savePinSettings" style="align-self:flex-start;">تغيير رمز الدخول</button>
+      </div>
+    </div>
+
+    <!-- Session Management -->
+    <div class="settings-card">
+      <div class="settings-card-header">
+        <span class="settings-icon">🚪</span>
+        <h3>تسجيل الخروج</h3>
+      </div>
+      <div class="settings-card-body">
+        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:var(--space-sm);">إنهاء الجلسة الحالية وقفل لوحة التحكم برمز PIN فوراً.</p>
+        <button class="btn-secondary logout-btn" data-action="logout" style="align-self:flex-start;color:var(--accent-red);border-color:rgba(239,68,68,0.3);display:inline-flex;align-items:center;gap:8px;">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          تسجيل الخروج الآن
+        </button>
       </div>
     </div>
 
