@@ -1337,15 +1337,10 @@ function getBaseMenuUrl() {
   return base.replace(/\/+$/, "");
 }
 
-function getTableTargetUrl(tableIdOrType) {
+function getTableTargetUrl(tableId) {
   const base = getBaseMenuUrl();
-  if (!tableIdOrType || tableIdOrType === "main-menu") {
-    return `${base}/`;
-  }
-  if (tableIdOrType === "takeaway") {
-    return `${base}/?table=${encodeURIComponent("سفري")}`;
-  }
-  return `${base}/?table=${encodeURIComponent(tableIdOrType)}`;
+  const t = (tableId || "1").toString().trim();
+  return `${base}/?table=${encodeURIComponent(t)}`;
 }
 
 function generateQrIntoElement(element, text, size = 170) {
@@ -1391,21 +1386,9 @@ function updateLiveTentCard() {
   const titleInput = document.getElementById("qrTableTitleInput");
   const noteInput = document.getElementById("qrCustomNote");
 
-  const tableVal = tableInput ? tableInput.value.trim() : "1";
-  let tableLabel = titleInput ? titleInput.value.trim() : `طاولة رقم ${tableVal}`;
-
-  let targetUrl = "";
-  if (activeQrType === "main-menu") {
-    targetUrl = getTableTargetUrl("main-menu");
-    tableLabel = "المنيو العام • All Menu";
-  } else if (activeQrType === "takeaway") {
-    targetUrl = getTableTargetUrl("takeaway");
-    tableLabel = "طلب سفري • Takeaway / Bar";
-  } else if (activeQrType === "batch") {
-    targetUrl = getTableTargetUrl(tableVal || "1");
-  } else {
-    targetUrl = getTableTargetUrl(tableVal || "1");
-  }
+  const tableVal = tableInput ? tableInput.value.trim() || "1" : "1";
+  const tableLabel = titleInput && titleInput.value.trim() ? titleInput.value.trim() : `طاولة رقم ${tableVal}`;
+  const targetUrl = getTableTargetUrl(tableVal);
 
   // Update table pill
   const pillEl = document.getElementById("tentTableLabel");
@@ -1648,41 +1631,12 @@ function downloadTentCardAsPng() {
 }
 
 function initQRStudio() {
-  document.querySelectorAll(".qr-type-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".qr-type-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      activeQrType = btn.dataset.type;
-
-      const singleConfig = document.getElementById("singleTableConfig");
-      const batchConfig = document.getElementById("batchTableConfig");
-      const tableInput = document.getElementById("qrTableInput");
-      const titleInput = document.getElementById("qrTableTitleInput");
-
-      if (activeQrType === "single-table") {
-        if (singleConfig) singleConfig.style.display = "block";
-        if (batchConfig) batchConfig.style.display = "none";
-        if (titleInput && tableInput) titleInput.value = `طاولة رقم ${tableInput.value || "1"}`;
-      } else if (activeQrType === "main-menu") {
-        if (singleConfig) singleConfig.style.display = "none";
-        if (batchConfig) batchConfig.style.display = "none";
-      } else if (activeQrType === "takeaway") {
-        if (singleConfig) singleConfig.style.display = "none";
-        if (batchConfig) batchConfig.style.display = "none";
-      } else if (activeQrType === "batch") {
-        if (singleConfig) singleConfig.style.display = "none";
-        if (batchConfig) batchConfig.style.display = "block";
-      }
-
-      updateLiveTentCard();
-    });
-  });
-
   const tableInput = document.getElementById("qrTableInput");
   const titleInput = document.getElementById("qrTableTitleInput");
   if (tableInput && titleInput) {
     tableInput.addEventListener("input", () => {
-      titleInput.value = `طاولة رقم ${tableInput.value.trim()}`;
+      const val = tableInput.value.trim();
+      titleInput.value = val ? `طاولة رقم ${val}` : "طاولة رقم 1";
       updateLiveTentCard();
     });
     titleInput.addEventListener("input", updateLiveTentCard);
@@ -1691,22 +1645,19 @@ function initQRStudio() {
   document.getElementById("qrCustomNote")?.addEventListener("input", updateLiveTentCard);
 
   document.getElementById("generateQrBtn")?.addEventListener("click", () => {
-    if (activeQrType === "batch") {
-      generateBatchTableCards();
-    } else {
-      updateLiveTentCard();
-      showToast("تم تحديث كارت الـ QR بنجاح");
-    }
+    updateLiveTentCard();
+    showToast("تم تحديث كارت المعاينة بنجاح");
+  });
+
+  document.getElementById("generateBatchBtn")?.addEventListener("click", () => {
+    generateBatchTableCards();
   });
 
   document.getElementById("editBaseUrlBtn")?.addEventListener("click", openEditBaseUrlModal);
 
   document.getElementById("copyCurrentQrLinkBtn")?.addEventListener("click", () => {
     const tableVal = document.getElementById("qrTableInput")?.value.trim() || "1";
-    let target = "";
-    if (activeQrType === "main-menu") target = getTableTargetUrl("main-menu");
-    else if (activeQrType === "takeaway") target = getTableTargetUrl("takeaway");
-    else target = getTableTargetUrl(tableVal);
+    const target = getTableTargetUrl(tableVal);
 
     navigator.clipboard.writeText(target).then(() => {
       showToast("تم نسخ رابط الـ QR إلى الحافظة 📋");

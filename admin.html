@@ -319,43 +319,17 @@
           <div class="qr-studio-grid">
             <!-- Controls Column -->
             <div class="qr-controls-card">
-              <h3 class="qr-card-title">⚙️ إعدادات التوليد</h3>
+              <h3 class="qr-card-title">⚙️ إعدادات كارت الطاولة</h3>
 
-              <div class="form-group">
-                <label class="form-label">نوع الـ QR</label>
-                <div class="qr-type-selector">
-                  <button type="button" class="qr-type-btn active" data-type="single-table">طاولة محددة</button>
-                  <button type="button" class="qr-type-btn" data-type="main-menu">المنيو العام</button>
-                  <button type="button" class="qr-type-btn" data-type="takeaway">طلب سفري / بار</button>
-                  <button type="button" class="qr-type-btn" data-type="batch">مجموعة طاولات</button>
+              <!-- Table Number & Name -->
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">رقم الطاولة</label>
+                  <input type="text" class="form-input" id="qrTableInput" value="1" placeholder="مثلاً: 1 أو VIP 2">
                 </div>
-              </div>
-
-              <!-- Single Table Settings -->
-              <div id="singleTableConfig">
-                <div class="form-row">
-                  <div class="form-group">
-                    <label class="form-label">رقم / مسمى الطاولة</label>
-                    <input type="text" class="form-input" id="qrTableInput" value="1" placeholder="مثلاً: 1 أو VIP 2">
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">المسمى الظاهر بالكارت</label>
-                    <input type="text" class="form-input" id="qrTableTitleInput" value="طاولة رقم 1" placeholder="طاولة رقم 1">
-                  </div>
-                </div>
-              </div>
-
-              <!-- Batch Tables Settings -->
-              <div id="batchTableConfig" style="display:none;">
-                <div class="form-row">
-                  <div class="form-group">
-                    <label class="form-label">من طاولة رقم</label>
-                    <input type="number" class="form-input" id="qrBatchFrom" value="1" min="1">
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">إلى طاولة رقم</label>
-                    <input type="number" class="form-input" id="qrBatchTo" value="12" min="1">
-                  </div>
+                <div class="form-group">
+                  <label class="form-label">المسمى الظاهر بالكارت</label>
+                  <input type="text" class="form-input" id="qrTableTitleInput" value="طاولة رقم 1" placeholder="طاولة رقم 1">
                 </div>
               </div>
 
@@ -365,10 +339,29 @@
                 <input type="text" class="form-input" id="qrCustomNote" value="نتمنى لكم أوقاتاً ممتعة ولحظات استثنائية" placeholder="رسالة ترحيبية للزبائن">
               </div>
 
+              <!-- Batch Generation Range (Optional) -->
+              <div class="form-group" style="margin-top: 12px; padding-top: 14px; border-top: 1px dashed rgba(217, 119, 6, 0.3);">
+                <label class="form-label">توليد مجموعة طاولات دفعة واحدة (طباعة جماعية)</label>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:0.78rem;">من طاولة رقم</label>
+                    <input type="number" class="form-input" id="qrBatchFrom" value="1" min="1">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:0.78rem;">إلى طاولة رقم</label>
+                    <input type="number" class="form-input" id="qrBatchTo" value="12" min="1">
+                  </div>
+                </div>
+              </div>
+
               <div class="qr-action-buttons">
                 <button type="button" class="btn-primary w-100" id="generateQrBtn">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
-                  <span>تحديث وتوليد الكروت</span>
+                  <span>تحديث كارت المعاينة</span>
+                </button>
+                <button type="button" class="btn-secondary w-100" id="generateBatchBtn" style="margin-top: 8px;">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                  <span>توليد كروت المجموعة (طباعة)</span>
                 </button>
               </div>
             </div>
