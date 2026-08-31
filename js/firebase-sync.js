@@ -11,6 +11,10 @@ import {
   setDoc, 
   onSnapshot 
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+import {
+  getAuth,
+  signInAnonymously
+} from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDgC0zjozHiRoCQBzCSzyTN5hMuKJBL2Jo",
@@ -24,17 +28,60 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 const docRef = doc(db, "moka_menu", "data");
 
 /**
- * Save all menu, offers, and settings data to Firebase Cloud Firestore.
+ * Ensure user is authenticated before performing write operations
+ */
+async function ensureAuthenticated() {
+  try {
+    if (!auth.currentUser) {
+      await signInAnonymously(auth);
+    }
+    return true;
+  } catch (error) {
+    console.warn("Firebase Anonymous Auth warning:", error);
+    return false;
+  }
+}
+
+/**
+ * Filter and sanitize settings data before sending to Firestore
+ * Excludes private administrative credentials (like adminPin) from public customer data.
+ */
+function sanitizePublicSettings(settings = {}) {
+  const {
+    whatsappNumber = "201000000000",
+    phoneNumber = "+201000000000",
+    whatsappUrl = "https://wa.me/201000000000",
+    instagramUrl = "https://instagram.com",
+    menuBaseUrl = "",
+    cloudinaryCloudName = "qrif7qmf",
+    cloudinaryUploadPreset = "moka menu"
+  } = settings;
+
+  return {
+    whatsappNumber,
+    phoneNumber,
+    whatsappUrl,
+    instagramUrl,
+    menuBaseUrl,
+    cloudinaryCloudName,
+    cloudinaryUploadPreset
+  };
+}
+
+/**
+ * Save menu, offers, and public settings data to Firebase Cloud Firestore.
  */
 export async function saveToCloud(menuData, offerData, settingsData) {
   try {
+    await ensureAuthenticated();
     const payload = {
       menu: menuData,
       offer: offerData,
-      settings: settingsData,
+      settings: sanitizePublicSettings(settingsData),
       updatedAt: new Date().toISOString()
     };
     await setDoc(docRef, payload);

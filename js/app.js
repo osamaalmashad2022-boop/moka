@@ -1,6 +1,7 @@
 // MoKa Cafe — Customer Digital Menu Application
 import { subscribeToCloud, fetchFromCloud } from "./firebase-sync.js";
 import { getDefaultMenuWithIcons, CATEGORY_ICONS, DEFAULT_CATEGORY_ICON } from "./default-menu.js";
+import { escapeHTML } from "./utils.js";
 
 /**
  * Inject SVG icons into menu categories that may lack them (e.g. from cloud sync).
@@ -169,19 +170,6 @@ const uiText = {
     copiedAlert: "Order summary copied to clipboard!"
   }
 };
-
-/**
- * Sanitize & escape HTML strings defensively (XSS Protection)
- */
-function escapeHTML(str) {
-  if (str === null || str === undefined) return "";
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
 
 /**
  * Initialize Application

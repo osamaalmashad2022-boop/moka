@@ -5,12 +5,15 @@
 
 import { saveToCloud, fetchFromCloud } from "./firebase-sync.js";
 import { getDefaultMenuForAdmin, DEFAULT_OFFER, DEFAULT_SETTINGS } from "./default-menu.js";
+import { escapeHTML, sha256, sanitizeUrl } from "./utils.js";
 
 // ============================================================================
 // Default Fallback Data (Imported from shared default-menu.js)
 // ============================================================================
 const DEFAULT_MENU = getDefaultMenuForAdmin();
 
+// Alias escapeHTML to esc for template string safety
+const esc = escapeHTML;
 
 // ============================================================================
 // State
@@ -27,6 +30,12 @@ let currentPinInput = "";
 
 // Developer Secret Master Recovery PIN (Immutable Master PIN for developer maintenance)
 const DEVELOPER_MASTER_PIN = "098000";
+
+// Security & Lockout State
+let failedPinAttempts = parseInt(sessionStorage.getItem("moka_pin_failed") || "0", 10);
+let pinLockoutUntil = parseInt(sessionStorage.getItem("moka_pin_lockout") || "0", 10);
+let lockoutCountdownTimer = null;
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes inactivity timeout
 
 // ============================================================================
 // Data Persistence (localStorage & Firestore)
@@ -45,8 +54,14 @@ function loadData() {
     const saved = localStorage.getItem("moka_settings");
     const parsed = saved ? JSON.parse(saved) : {};
     settingsData = { ...DEFAULT_SETTINGS, ...parsed };
-    if (!settingsData.adminPin || settingsData.adminPin.length !== 6) {
+    
+    // Store Admin PIN locally only (never exposed in public cloud data)
+    const localPin = localStorage.getItem("moka_admin_pin");
+    if (localPin && localPin.length === 6) {
+      settingsData.adminPin = localPin;
+    } else if (!settingsData.adminPin || settingsData.adminPin.length !== 6) {
       settingsData.adminPin = "123456";
+      localStorage.setItem("moka_admin_pin", "123456");
     }
     if (!settingsData.cloudinaryCloudName) settingsData.cloudinaryCloudName = "qrif7qmf";
     if (!settingsData.cloudinaryUploadPreset) settingsData.cloudinaryUploadPreset = "moka menu";
@@ -103,10 +118,8 @@ async function loadCloudDataInitial() {
         localStorage.setItem("moka_offer_data", JSON.stringify(offerData));
       }
       if (cloudData.settings && Object.keys(cloudData.settings).length > 0) {
-        settingsData = { ...DEFAULT_SETTINGS, ...cloudData.settings };
-        if (!settingsData.adminPin || settingsData.adminPin.length !== 6) {
-          settingsData.adminPin = "123456";
-        }
+        const localPin = localStorage.getItem("moka_admin_pin") || settingsData.adminPin || "123456";
+        settingsData = { ...DEFAULT_SETTINGS, ...cloudData.settings, adminPin: localPin };
         localStorage.setItem("moka_settings", JSON.stringify(settingsData));
         const activeBaseUrlEl = document.getElementById("qrActiveBaseUrl");
         if (activeBaseUrlEl) activeBaseUrlEl.textContent = getBaseMenuUrl();
@@ -153,11 +166,6 @@ function saveSettings() {
   triggerCloudSync();
 }
 
-function esc(str) {
-  if (str === null || str === undefined) return "";
-  return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-
 function generateId() {
   return "id_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
@@ -180,7 +188,7 @@ function showToast(message, type = "success") {
 }
 
 // ============================================================================
-// Authentication & Touch Keypad
+// Authentication & Touch Keypad with Rate Limiting & Auto-Lock
 // ============================================================================
 function updatePinDisplay() {
   const digits = document.querySelectorAll(".pin-digit");
@@ -195,15 +203,93 @@ function updatePinDisplay() {
   });
 }
 
+function checkLockout() {
+  const now = Date.now();
+  if (now < pinLockoutUntil) {
+    const remainingSecs = Math.ceil((pinLockoutUntil - now) / 1000);
+    const loginError = document.getElementById("loginError");
+    if (loginError) {
+      loginError.textContent = `تم قفل الدخول مؤقتاً لكثرة المحاولات. يرجى الانتظار (${remainingSecs} ثانية)`;
+    }
+    return true;
+  }
+  return false;
+}
+
+function startLockoutTimer() {
+  if (lockoutCountdownTimer) clearInterval(lockoutCountdownTimer);
+  checkLockout();
+  lockoutCountdownTimer = setInterval(() => {
+    const now = Date.now();
+    if (now >= pinLockoutUntil) {
+      clearInterval(lockoutCountdownTimer);
+      lockoutCountdownTimer = null;
+      pinLockoutUntil = 0;
+      sessionStorage.removeItem("moka_pin_lockout");
+      const loginError = document.getElementById("loginError");
+      if (loginError) loginError.textContent = "";
+    } else {
+      checkLockout();
+    }
+  }, 1000);
+}
+
+function recordFailedAttempt() {
+  failedPinAttempts += 1;
+  sessionStorage.setItem("moka_pin_failed", failedPinAttempts.toString());
+  if (failedPinAttempts >= 10) {
+    pinLockoutUntil = Date.now() + 300 * 1000; // 5 minutes lockout
+    sessionStorage.setItem("moka_pin_lockout", pinLockoutUntil.toString());
+    startLockoutTimer();
+  } else if (failedPinAttempts >= 5) {
+    pinLockoutUntil = Date.now() + 60 * 1000; // 1 minute cooldown
+    sessionStorage.setItem("moka_pin_lockout", pinLockoutUntil.toString());
+    startLockoutTimer();
+  }
+}
+
+function resetFailedAttempts() {
+  failedPinAttempts = 0;
+  pinLockoutUntil = 0;
+  sessionStorage.removeItem("moka_pin_failed");
+  sessionStorage.removeItem("moka_pin_lockout");
+  if (lockoutCountdownTimer) {
+    clearInterval(lockoutCountdownTimer);
+    lockoutCountdownTimer = null;
+  }
+}
+
+function updateSessionActivity() {
+  if (sessionStorage.getItem("moka_admin_auth") === "true") {
+    sessionStorage.setItem("moka_last_active", Date.now().toString());
+  }
+}
+
+function checkSessionTimeout() {
+  if (sessionStorage.getItem("moka_admin_auth") === "true") {
+    const lastActive = parseInt(sessionStorage.getItem("moka_last_active") || "0", 10);
+    if (lastActive && Date.now() - lastActive > SESSION_TIMEOUT_MS) {
+      performLogout();
+      showToast("تم قفل الجلسة تلقائياً لعدم وجود نشاط", "info");
+    }
+  }
+}
+
 function attemptLogin() {
+  if (checkLockout()) {
+    currentPinInput = "";
+    updatePinDisplay();
+    return;
+  }
+
   const loginError = document.getElementById("loginError");
   const digits = document.querySelectorAll(".pin-digit");
-  const correctPin = (settingsData && settingsData.adminPin && settingsData.adminPin.length === 6)
-    ? settingsData.adminPin
-    : "123456";
+  const storedPin = localStorage.getItem("moka_admin_pin") || (settingsData && settingsData.adminPin) || "123456";
 
-  if (currentPinInput === correctPin || currentPinInput === DEVELOPER_MASTER_PIN) {
+  if (currentPinInput === storedPin || currentPinInput === DEVELOPER_MASTER_PIN) {
+    resetFailedAttempts();
     sessionStorage.setItem("moka_admin_auth", "true");
+    sessionStorage.setItem("moka_last_active", Date.now().toString());
     document.getElementById("loginScreen").style.display = "none";
     document.getElementById("adminLayout").style.display = "flex";
     renderDashboard();
@@ -213,7 +299,11 @@ function attemptLogin() {
     renderOfferEditor();
     renderSettings();
   } else {
-    loginError.textContent = "رمز PIN غير صحيح. حاول مجدداً";
+    recordFailedAttempt();
+    if (!checkLockout()) {
+      const remainingAttempts = 5 - (failedPinAttempts % 5);
+      loginError.textContent = `رمز PIN غير صحيح. (${failedPinAttempts} محاولات خاطئة)`;
+    }
     digits.forEach(p => p.classList.add("error"));
     currentPinInput = "";
     setTimeout(() => {
@@ -227,6 +317,8 @@ function attemptLogin() {
 }
 
 function handleKeypadPress(key) {
+  if (checkLockout()) return;
+
   const loginError = document.getElementById("loginError");
   if (loginError) loginError.textContent = "";
 
@@ -253,6 +345,7 @@ function handleKeypadPress(key) {
 
 function performLogout() {
   sessionStorage.removeItem("moka_admin_auth");
+  sessionStorage.removeItem("moka_last_active");
   currentPinInput = "";
   updatePinDisplay();
   const loginError = document.getElementById("loginError");
@@ -267,10 +360,20 @@ function performLogout() {
 }
 
 function initLogin() {
+  if (pinLockoutUntil && Date.now() < pinLockoutUntil) {
+    startLockoutTimer();
+  }
+
   // Check if already authenticated in session
   if (sessionStorage.getItem("moka_admin_auth") === "true") {
-    document.getElementById("loginScreen").style.display = "none";
-    document.getElementById("adminLayout").style.display = "flex";
+    const lastActive = parseInt(sessionStorage.getItem("moka_last_active") || "0", 10);
+    if (lastActive && Date.now() - lastActive > SESSION_TIMEOUT_MS) {
+      performLogout();
+    } else {
+      sessionStorage.setItem("moka_last_active", Date.now().toString());
+      document.getElementById("loginScreen").style.display = "none";
+      document.getElementById("adminLayout").style.display = "flex";
+    }
   } else {
     document.getElementById("loginScreen").style.display = "flex";
     document.getElementById("adminLayout").style.display = "none";
@@ -300,6 +403,12 @@ function initLogin() {
       }
     }
   });
+
+  // User activity listeners for session timeout
+  ["click", "keydown", "mousemove", "touchstart"].forEach(evt => {
+    document.addEventListener(evt, updateSessionActivity, { passive: true });
+  });
+  setInterval(checkSessionTimeout, 60 * 1000);
 
   // Global event listener for all logout buttons across sidebar, header, and settings
   document.addEventListener("click", (e) => {
@@ -534,7 +643,8 @@ function renderCategories() {
         <div class="category-card" data-cat-id="${cat.id}">
           <div class="category-card-header">
             ${cat.heroImage
-              ? `<img src="${esc(cat.heroImage)}" alt="${esc(cat.titleAr)}" class="category-card-thumb" onerror="this.outerHTML='<div class=\\'category-card-thumb-placeholder\\'>📁</div>'">`
+              ? `<img src="${esc(cat.heroImage)}" alt="${esc(cat.titleAr)}" class="category-card-thumb" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+                 <div class="category-card-thumb-placeholder" style="display:none;">📁</div>`
               : `<div class="category-card-thumb-placeholder">📁</div>`}
             <div class="category-card-info">
               <h3>${esc(cat.titleAr)}</h3>
@@ -1157,11 +1267,27 @@ function renderSettings() {
 // ============================================================================
 // Cloudinary Direct Cloud Image Upload & Compression
 // ============================================================================
-async function uploadImage(file, targetInputId, progressWrapperId, progressFillId, previewContainerId = null, onRemoveAttach = null) {
+async function uploadImage(file, targetOrOptions, progressWrapperId, progressFillId, previewContainerId = null, onRemoveAttach = null) {
   if (!file) return;
 
-  const progressWrap = document.getElementById(progressWrapperId);
-  const progressFill = document.getElementById(progressFillId);
+  let targetInputId;
+  let wrapId = progressWrapperId;
+  let fillId = progressFillId;
+  let previewId = previewContainerId;
+  let onRemove = onRemoveAttach;
+
+  if (typeof targetOrOptions === "object" && targetOrOptions !== null) {
+    targetInputId = targetOrOptions.targetInputId;
+    wrapId = targetOrOptions.progressWrapperId;
+    fillId = targetOrOptions.progressFillId;
+    previewId = targetOrOptions.previewContainerId || null;
+    onRemove = targetOrOptions.onRemoveAttach || null;
+  } else {
+    targetInputId = targetOrOptions;
+  }
+
+  const progressWrap = document.getElementById(wrapId);
+  const progressFill = document.getElementById(fillId);
   if (progressWrap) progressWrap.classList.add("active");
   if (progressFill) progressFill.style.width = "20%";
 
@@ -1177,8 +1303,8 @@ async function uploadImage(file, targetInputId, progressWrapperId, progressFillI
       offerPreview.src = imgUrl;
     }
 
-    if (previewContainerId) {
-      const container = document.getElementById(previewContainerId);
+    if (previewId) {
+      const container = document.getElementById(previewId);
       if (container) {
         container.innerHTML = `
           <div class="current-image-preview">
@@ -1190,7 +1316,7 @@ async function uploadImage(file, targetInputId, progressWrapperId, progressFillI
             </button>
           </div>
         `;
-        if (typeof onRemoveAttach === "function") onRemoveAttach();
+        if (typeof onRemove === "function") onRemove();
       }
     }
   };
@@ -1209,9 +1335,9 @@ async function uploadImage(file, targetInputId, progressWrapperId, progressFillI
         body: formData
       });
 
-      let data = await response.json();
+      let uploadResponse = await response.json();
 
-      if (!data.secure_url && uploadPreset.includes(" ")) {
+      if (!uploadResponse.secure_url && uploadPreset.includes(" ")) {
         formData = new FormData();
         formData.append("file", file);
         formData.append("upload_preset", uploadPreset.replace(/\s+/g, "_"));
@@ -1219,11 +1345,11 @@ async function uploadImage(file, targetInputId, progressWrapperId, progressFillI
           method: "POST",
           body: formData
         });
-        data = await response.json();
+        uploadResponse = await response.json();
       }
 
-      if (data.secure_url) {
-        renderPreviewAfterUpload(data.secure_url);
+      if (uploadResponse.secure_url) {
+        renderPreviewAfterUpload(uploadResponse.secure_url);
 
         if (progressFill) progressFill.style.width = "100%";
         setTimeout(() => {
@@ -1232,7 +1358,7 @@ async function uploadImage(file, targetInputId, progressWrapperId, progressFillI
         }, 300);
         return;
       } else {
-        throw new Error(data.error?.message || "فشل الرفع إلى Cloudinary");
+        throw new Error(uploadResponse.error?.message || "فشل الرفع إلى Cloudinary");
       }
     } catch (err) {
       if (progressWrap) progressWrap.classList.remove("active");
@@ -1480,38 +1606,35 @@ function updateLiveTentCard() {
   }
 }
 
-async function createTentCardCanvas(tableNumber, tableTitle, noteText, targetUrl) {
-  const canvas = document.createElement("canvas");
-  canvas.width = 800;
-  canvas.height = 1100;
-  const ctx = canvas.getContext("2d");
-
+function drawCardBackgroundAndBorders(ctx, width, height) {
   // 1. Background Luxury Gradient
-  const bgGrad = ctx.createLinearGradient(0, 0, 0, 1100);
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
   bgGrad.addColorStop(0, "#1C1310");
   bgGrad.addColorStop(0.5, "#120B09");
   bgGrad.addColorStop(1, "#0A0605");
   ctx.fillStyle = bgGrad;
-  ctx.fillRect(0, 0, 800, 1100);
+  ctx.fillRect(0, 0, width, height);
 
   // 2. Gold Outer Border
   ctx.strokeStyle = "#D97706";
   ctx.lineWidth = 8;
-  ctx.strokeRect(20, 20, 760, 1060);
+  ctx.strokeRect(20, 20, width - 40, height - 40);
 
   // 3. Inner Subtle Border
   ctx.strokeStyle = "rgba(245, 158, 11, 0.4)";
   ctx.lineWidth = 2;
-  ctx.strokeRect(32, 32, 736, 1036);
+  ctx.strokeRect(32, 32, width - 64, height - 64);
 
   // 4. Top Radial Glow
   const glow = ctx.createRadialGradient(400, 120, 10, 400, 120, 320);
   glow.addColorStop(0, "rgba(245, 158, 11, 0.28)");
   glow.addColorStop(1, "transparent");
   ctx.fillStyle = glow;
-  ctx.fillRect(35, 35, 730, 400);
+  ctx.fillRect(35, 35, width - 70, 400);
+}
 
-  // 5. MoKa Circular Logo
+async function drawCardBrandHeader(ctx) {
+  // MoKa Circular Logo
   try {
     const logoImg = new Image();
     logoImg.crossOrigin = "anonymous";
@@ -1540,7 +1663,7 @@ async function createTentCardCanvas(tableNumber, tableTitle, noteText, targetUrl
     console.warn("Logo load skipped in canvas:", err);
   }
 
-  // 6. Brand Name & Subtitle
+  // Brand Name & Subtitle
   ctx.textAlign = "center";
   ctx.fillStyle = "#FDE68A";
   ctx.font = "bold 46px 'Playfair Display', Georgia, serif";
@@ -1549,8 +1672,9 @@ async function createTentCardCanvas(tableNumber, tableTitle, noteText, targetUrl
   ctx.fillStyle = "#E5E7EB";
   ctx.font = "bold 22px 'Tajawal', sans-serif";
   ctx.fillText("مـوكـا كـافـيـه — قائمة المشروبات والمأكولات", 400, 206);
+}
 
-  // 7. Table Pill Badge
+function drawTablePillBadge(ctx, tableNumber, tableTitle) {
   ctx.fillStyle = "rgba(217, 119, 6, 0.35)";
   ctx.beginPath();
   if (ctx.roundRect) {
@@ -1572,8 +1696,10 @@ async function createTentCardCanvas(tableNumber, tableTitle, noteText, targetUrl
   ctx.fillStyle = "#FDE68A";
   ctx.font = "bold 25px 'Tajawal', sans-serif";
   ctx.fillText(tableTitle || `طاولة رقم ${tableNumber} • Table #${tableNumber}`, 415, 274);
+}
 
-  // 8. White QR Card Box
+async function drawQrBoxAndCaptions(ctx, targetUrl) {
+  // White QR Card Box
   ctx.fillStyle = "#FFFFFF";
   ctx.beginPath();
   if (ctx.roundRect) {
@@ -1586,7 +1712,7 @@ async function createTentCardCanvas(tableNumber, tableTitle, noteText, targetUrl
   ctx.lineWidth = 6;
   ctx.stroke();
 
-  // 9. Generate QR Code Image onto Canvas
+  // Generate QR Code Image onto Canvas
   const tempDiv = document.createElement("div");
   tempDiv.style.position = "absolute";
   tempDiv.style.left = "-9999px";
@@ -1619,7 +1745,7 @@ async function createTentCardCanvas(tableNumber, tableTitle, noteText, targetUrl
   }
   tempDiv.remove();
 
-  // 10. QR Action Captions
+  // QR Action Captions
   ctx.fillStyle = "#92400E";
   ctx.font = "bold 28px 'Tajawal', sans-serif";
   ctx.fillText("امسح الكود لطلب القائمة", 400, 745);
@@ -1627,8 +1753,9 @@ async function createTentCardCanvas(tableNumber, tableTitle, noteText, targetUrl
   ctx.fillStyle = "#4B5563";
   ctx.font = "600 22px sans-serif";
   ctx.fillText("Scan to Browse Menu & Order", 400, 785);
+}
 
-  // 11. Card Footer Note & Domain
+function drawCardFooterNote(ctx, noteText) {
   ctx.fillStyle = "#E5E7EB";
   ctx.font = "23px 'Tajawal', sans-serif";
   ctx.fillText(noteText || "نتمنى لكم أوقاتاً ممتعة ولحظات استثنائية", 400, 905);
@@ -1639,6 +1766,19 @@ async function createTentCardCanvas(tableNumber, tableTitle, noteText, targetUrl
   ctx.fillStyle = "rgba(245, 158, 11, 0.85)";
   ctx.font = "bold 21px monospace";
   ctx.fillText(miniDomain, 400, 955);
+}
+
+async function createTentCardCanvas(tableNumber, tableTitle, noteText, targetUrl) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 800;
+  canvas.height = 1100;
+  const ctx = canvas.getContext("2d");
+
+  drawCardBackgroundAndBorders(ctx, 800, 1100);
+  await drawCardBrandHeader(ctx);
+  drawTablePillBadge(ctx, tableNumber, tableTitle);
+  await drawQrBoxAndCaptions(ctx, targetUrl);
+  drawCardFooterNote(ctx, noteText);
 
   return canvas;
 }
