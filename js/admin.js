@@ -99,6 +99,9 @@ async function loadCloudDataInitial() {
       if (cloudData.settings && Object.keys(cloudData.settings).length > 0) {
         settingsData = { ...DEFAULT_SETTINGS, ...cloudData.settings };
         localStorage.setItem("moka_settings", JSON.stringify(settingsData));
+        const activeBaseUrlEl = document.getElementById("qrActiveBaseUrl");
+        if (activeBaseUrlEl) activeBaseUrlEl.textContent = getBaseMenuUrl();
+        if (typeof updateLiveTentCard === "function") updateLiveTentCard();
       }
       if (!selectedCategoryId && menuData.length > 0) {
         selectedCategoryId = menuData[0].id;
@@ -108,6 +111,11 @@ async function loadCloudDataInitial() {
       if (currentSection === "items") renderItemsTable();
       if (currentSection === "offers") renderOfferEditor();
       if (currentSection === "settings") renderSettings();
+      if (currentSection === "qr") {
+        const activeBaseUrlEl = document.getElementById("qrActiveBaseUrl");
+        if (activeBaseUrlEl) activeBaseUrlEl.textContent = getBaseMenuUrl();
+        updateLiveTentCard();
+      }
       updateCloudBadge("saved");
     } else {
       triggerCloudSync();
@@ -1243,8 +1251,17 @@ function compressImage(file, maxWidth = 1000, maxHeight = 1000, quality = 0.82) 
 // ============================================================================
 let modalSaveCallback = null;
 
-function showModal(onSave) {
-  modalSaveCallback = onSave;
+function showModal(...args) {
+  if (args.length === 1 && typeof args[0] === "function") {
+    modalSaveCallback = args[0];
+  } else if (args.length >= 2) {
+    const [title, bodyHtml, onSave] = args;
+    const titleEl = document.getElementById("modalTitle");
+    const bodyEl = document.getElementById("modalBody");
+    if (titleEl && title) titleEl.textContent = title;
+    if (bodyEl && bodyHtml !== undefined) bodyEl.innerHTML = bodyHtml;
+    modalSaveCallback = typeof onSave === "function" ? onSave : null;
+  }
   document.getElementById("modalOverlay")?.classList.add("active");
 }
 
@@ -1696,6 +1713,7 @@ function openEditBaseUrlModal() {
     let val = input.value.trim();
     if (!val) val = window.location.origin;
     if (!/^https?:\/\//i.test(val)) val = "https://" + val;
+    val = val.replace(/\/+$/, "");
     settingsData.menuBaseUrl = val;
     saveSettings();
     const activeBaseUrlEl = document.getElementById("qrActiveBaseUrl");
@@ -1812,6 +1830,9 @@ async function downloadBatchSequentially(customFrom, customTo) {
 }
 
 function initQRStudio() {
+  const activeBaseUrlEl = document.getElementById("qrActiveBaseUrl");
+  if (activeBaseUrlEl) activeBaseUrlEl.textContent = getBaseMenuUrl();
+
   const tableInput = document.getElementById("qrTableInput");
   const titleInput = document.getElementById("qrTableTitleInput");
   if (tableInput && titleInput) {
