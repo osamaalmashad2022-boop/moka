@@ -1361,6 +1361,13 @@ function generateQrIntoElement(element, text, size = 170) {
         colorLight: "#FFFFFF",
         correctLevel: QRCode.CorrectLevel.H
       });
+      // Ensure only a single QR element is visible
+      const canvas = element.querySelector("canvas");
+      const img = element.querySelector("img");
+      if (canvas && img) {
+        canvas.style.display = "none";
+        img.style.display = "block";
+      }
     } catch (e) {
       console.error("QR Code Generation Error:", e);
       element.innerHTML = `<span style="font-size:0.75rem;color:red;">خطأ في توليد QR</span>`;
@@ -1376,20 +1383,12 @@ function renderQRCodesSection() {
     activeBaseUrlEl.textContent = getBaseMenuUrl();
   }
 
-  const wifiSsidInput = document.getElementById("qrWifiSsid");
-  const wifiPassInput = document.getElementById("qrWifiPass");
-  if (wifiSsidInput && settingsData.wifiSsid) wifiSsidInput.value = settingsData.wifiSsid;
-  if (wifiPassInput && typeof settingsData.wifiPass !== "undefined") wifiPassInput.value = settingsData.wifiPass;
-
   updateLiveTentCard();
 }
 
 function updateLiveTentCard() {
   const tableInput = document.getElementById("qrTableInput");
   const titleInput = document.getElementById("qrTableTitleInput");
-  const wifiCheck = document.getElementById("qrIncludeWifi");
-  const wifiSsid = document.getElementById("qrWifiSsid");
-  const wifiPass = document.getElementById("qrWifiPass");
   const noteInput = document.getElementById("qrCustomNote");
 
   const tableVal = tableInput ? tableInput.value.trim() : "1";
@@ -1418,23 +1417,10 @@ function updateLiveTentCard() {
     generateQrIntoElement(qrHolder, targetUrl, 170);
   }
 
-  // Update WiFi
-  const wifiBox = document.getElementById("tentWifiBox");
-  const wifiText = document.getElementById("tentWifiText");
-  const showWifi = wifiCheck ? wifiCheck.checked : true;
-  if (wifiBox) {
-    wifiBox.style.display = showWifi ? "flex" : "none";
-  }
-  if (wifiText && wifiSsid) {
-    const ssid = wifiSsid.value.trim() || "MoKa Cafe Guest";
-    const pass = wifiPass ? wifiPass.value.trim() : "";
-    wifiText.textContent = pass ? `${ssid} • Pass: ${pass}` : `${ssid} (مفتوحة)`;
-  }
-
   // Update Note
   const noteEl = document.getElementById("tentNoteText");
   if (noteEl && noteInput) {
-    noteEl.textContent = noteInput.value.trim() || "نتمنى لكم أوقاتاً ممتعة ولحظات استثنائية ✨";
+    noteEl.textContent = noteInput.value.trim() || "نتمنى لكم أوقاتاً ممتعة ولحظات استثنائية";
   }
 
   // Update Mini URL
@@ -1452,10 +1438,7 @@ function updateLiveTentCard() {
 function generateBatchTableCards() {
   const fromVal = parseInt(document.getElementById("qrBatchFrom")?.value || "1", 10);
   const toVal = parseInt(document.getElementById("qrBatchTo")?.value || "12", 10);
-  const wifiCheck = document.getElementById("qrIncludeWifi")?.checked ?? true;
-  const wifiSsid = document.getElementById("qrWifiSsid")?.value.trim() || "MoKa Cafe Guest";
-  const wifiPass = document.getElementById("qrWifiPass")?.value.trim() || "";
-  const noteText = document.getElementById("qrCustomNote")?.value.trim() || "نتمنى لكم أوقاتاً ممتعة ولحظات استثنائية ✨";
+  const noteText = document.getElementById("qrCustomNote")?.value.trim() || "نتمنى لكم أوقاتاً ممتعة ولحظات استثنائية";
 
   if (isNaN(fromVal) || isNaN(toVal) || fromVal > toVal) {
     showToast("يرجى إدخال نطاق طاولات صحيح", "error");
@@ -1472,8 +1455,6 @@ function generateBatchTableCards() {
   const miniDomain = (() => {
     try { return new URL(getBaseMenuUrl()).hostname; } catch { return getBaseMenuUrl(); }
   })();
-
-  const wifiContent = wifiPass ? `${wifiSsid} • Pass: ${wifiPass}` : `${wifiSsid} (مفتوحة)`;
 
   for (let i = fromVal; i <= toVal; i++) {
     const tableId = `batch-qr-t-${i}`;
@@ -1501,17 +1482,6 @@ function generateBatchTableCards() {
             <span>Scan to Browse Menu &amp; Order</span>
           </div>
         </div>
-        ${wifiCheck ? `
-          <div class="tent-wifi-box">
-            <div class="tent-wifi-icon">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
-            </div>
-            <div class="tent-wifi-text">
-              <span class="wifi-label">شبكة الواي فاي مجاناً / Free WiFi:</span>
-              <strong class="wifi-val">${esc(wifiContent)}</strong>
-            </div>
-          </div>
-        ` : ""}
         <div class="tent-footer">
           <p class="tent-note">${esc(noteText)}</p>
           <span class="tent-url-mini">${esc(miniDomain)}</span>
@@ -1590,8 +1560,8 @@ function downloadTentCardAsPng() {
   ctx.strokeRect(32, 32, 736, 1036);
 
   // Top Radial Glow
-  const glow = ctx.createRadialGradient(400, 100, 10, 400, 100, 300);
-  glow.addColorStop(0, "rgba(245, 158, 11, 0.25)");
+  const glow = ctx.createRadialGradient(400, 120, 10, 400, 120, 320);
+  glow.addColorStop(0, "rgba(245, 158, 11, 0.28)");
   glow.addColorStop(1, "transparent");
   ctx.fillStyle = glow;
   ctx.fillRect(35, 35, 730, 400);
@@ -1599,21 +1569,21 @@ function downloadTentCardAsPng() {
   // Brand Name
   ctx.textAlign = "center";
   ctx.fillStyle = "#FDE68A";
-  ctx.font = "bold 52px serif";
-  ctx.fillText("MoKa Cafe", 400, 150);
+  ctx.font = "bold 54px serif";
+  ctx.fillText("MoKa Cafe", 400, 145);
 
   ctx.fillStyle = "#E5E7EB";
   ctx.font = "bold 26px sans-serif";
-  ctx.fillText("مـوكـا كـافـيـه — قائمة المشروبات والمأكولات", 400, 200);
+  ctx.fillText("مـوكـا كـافـيـه — قائمة المشروبات والمأكولات", 400, 195);
 
   // Table Pill
   const tableTitle = document.getElementById("tentTableLabel")?.textContent || "طاولة رقم 1";
   ctx.fillStyle = "rgba(217, 119, 6, 0.35)";
   ctx.beginPath();
   if (ctx.roundRect) {
-    ctx.roundRect(200, 240, 400, 54, 27);
+    ctx.roundRect(190, 235, 420, 56, 28);
   } else {
-    ctx.rect(200, 240, 400, 54);
+    ctx.rect(190, 235, 420, 56);
   }
   ctx.fill();
   ctx.strokeStyle = "#F59E0B";
@@ -1622,76 +1592,51 @@ function downloadTentCardAsPng() {
 
   ctx.fillStyle = "#10B981";
   ctx.beginPath();
-  ctx.arc(230, 267, 7, 0, Math.PI * 2);
+  ctx.arc(225, 263, 8, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.fillStyle = "#FDE68A";
   ctx.font = "bold 26px sans-serif";
-  ctx.fillText(tableTitle, 410, 276);
+  ctx.fillText(tableTitle, 410, 273);
 
   // White QR Box
   ctx.fillStyle = "#FFFFFF";
   ctx.beginPath();
   if (ctx.roundRect) {
-    ctx.roundRect(190, 330, 420, 480, 24);
+    ctx.roundRect(170, 320, 460, 530, 24);
   } else {
-    ctx.rect(190, 330, 420, 480);
+    ctx.rect(170, 320, 460, 530);
   }
   ctx.fill();
   ctx.strokeStyle = "#D97706";
   ctx.lineWidth = 6;
   ctx.stroke();
 
-  // Draw QR
-  const sourceImg = qrCanvas || qrImg;
+  // Draw QR Image
+  const sourceImg = (qrImg && qrImg.src && qrImg.naturalWidth > 0) ? qrImg : qrCanvas;
   if (sourceImg) {
-    ctx.drawImage(sourceImg, 230, 360, 340, 340);
+    ctx.drawImage(sourceImg, 220, 350, 360, 360);
   }
 
   // QR Caption
   ctx.fillStyle = "#92400E";
-  ctx.font = "bold 28px sans-serif";
-  ctx.fillText("امسح الكود لطلب القائمة", 400, 745);
+  ctx.font = "bold 30px sans-serif";
+  ctx.fillText("امسح الكود لطلب القائمة", 400, 755);
 
   ctx.fillStyle = "#4B5563";
-  ctx.font = "600 22px sans-serif";
-  ctx.fillText("Scan to Browse Menu & Order", 400, 780);
+  ctx.font = "600 24px sans-serif";
+  ctx.fillText("Scan to Browse Menu & Order", 400, 795);
 
-  // WiFi Box
-  const showWifi = document.getElementById("qrIncludeWifi")?.checked ?? true;
-  if (showWifi) {
-    const wifiText = document.getElementById("tentWifiText")?.textContent || "";
-    ctx.fillStyle = "rgba(245, 158, 11, 0.15)";
-    ctx.beginPath();
-    if (ctx.roundRect) {
-      ctx.roundRect(120, 840, 560, 80, 16);
-    } else {
-      ctx.rect(120, 840, 560, 80);
-    }
-    ctx.fill();
-    ctx.strokeStyle = "rgba(245, 158, 11, 0.5)";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    ctx.fillStyle = "#D1D5DB";
-    ctx.font = "20px sans-serif";
-    ctx.fillText("شبكة الواي فاي مجاناً / Free WiFi:", 400, 872);
-
-    ctx.fillStyle = "#FDE68A";
-    ctx.font = "bold 24px sans-serif";
-    ctx.fillText(wifiText, 400, 904);
-  }
-
-  // Footer Note
-  const note = document.getElementById("tentNoteText")?.textContent || "";
+  // Footer Note (without emojis)
+  const note = document.getElementById("tentNoteText")?.textContent || "نتمنى لكم أوقاتاً ممتعة ولحظات استثنائية";
   ctx.fillStyle = "#E5E7EB";
-  ctx.font = "22px sans-serif";
-  ctx.fillText(note, 400, 970);
+  ctx.font = "24px sans-serif";
+  ctx.fillText(note, 400, 915);
 
   const miniDomain = document.getElementById("tentUrlMini")?.textContent || "";
   ctx.fillStyle = "rgba(245, 158, 11, 0.85)";
-  ctx.font = "bold 20px monospace";
-  ctx.fillText(miniDomain, 400, 1015);
+  ctx.font = "bold 22px monospace";
+  ctx.fillText(miniDomain, 400, 965);
 
   // Trigger Download
   const link = document.createElement("a");
@@ -1742,22 +1687,6 @@ function initQRStudio() {
     });
     titleInput.addEventListener("input", updateLiveTentCard);
   }
-
-  document.getElementById("qrIncludeWifi")?.addEventListener("change", (e) => {
-    const inputs = document.getElementById("wifiInputsWrap");
-    if (inputs) inputs.style.display = e.target.checked ? "block" : "none";
-    updateLiveTentCard();
-  });
-
-  document.getElementById("qrWifiSsid")?.addEventListener("input", () => {
-    settingsData.wifiSsid = document.getElementById("qrWifiSsid")?.value || "";
-    updateLiveTentCard();
-  });
-
-  document.getElementById("qrWifiPass")?.addEventListener("input", () => {
-    settingsData.wifiPass = document.getElementById("qrWifiPass")?.value || "";
-    updateLiveTentCard();
-  });
 
   document.getElementById("qrCustomNote")?.addEventListener("input", updateLiveTentCard);
 
