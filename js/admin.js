@@ -214,7 +214,11 @@ const DEFAULT_SETTINGS = {
   phoneNumber: "+201000000000",
   adminPin: "1234",
   cloudinaryCloudName: "qrif7qmf",
-  cloudinaryUploadPreset: "moka menu"
+  cloudinaryUploadPreset: "moka menu",
+  menuBaseUrl: "https://moka.osamaalmashad.workers.dev",
+  wifiSsid: "MoKa Cafe Guest",
+  wifiPass: "moka2026",
+  tablesCount: 12
 };
 
 // ============================================================================
@@ -505,6 +509,7 @@ function switchSection(section) {
     categories: "الأقسام",
     items: "الأصناف",
     offers: "العروض الخاصة",
+    qrcodes: "رموز QR والطاولات",
     settings: "الإعدادات",
     tools: "النسخ الاحتياطي"
   };
@@ -519,6 +524,7 @@ function switchSection(section) {
     renderItemsTable();
   }
   if (section === "offers") renderOfferEditor();
+  if (section === "qrcodes") renderQRCodesSection();
   if (section === "settings") renderSettings();
 
   // Scroll to top of content
@@ -571,6 +577,10 @@ function initNavigation() {
   document.getElementById("quickAddCatBtn")?.addEventListener("click", () => {
     switchSection("categories");
     setTimeout(() => openCategoryModal(), 150);
+  });
+
+  document.getElementById("quickQrBtn")?.addEventListener("click", () => {
+    switchSection("qrcodes");
   });
 
   // Mobile Floating Action Button (FAB)
@@ -1524,6 +1534,482 @@ function initTools() {
 }
 
 // ============================================================================
+// Dynamic QR Code Studio & Table Manager
+// ============================================================================
+let activeQrType = "single-table";
+
+function getBaseMenuUrl() {
+  let base = settingsData.menuBaseUrl || "";
+  if (!base || base.trim() === "") {
+    base = window.location.origin + window.location.pathname.replace(/admin\.html.*$/, "");
+  }
+  return base.replace(/\/+$/, "");
+}
+
+function getTableTargetUrl(tableIdOrType) {
+  const base = getBaseMenuUrl();
+  if (!tableIdOrType || tableIdOrType === "main-menu") {
+    return `${base}/`;
+  }
+  if (tableIdOrType === "takeaway") {
+    return `${base}/?table=${encodeURIComponent("سفري")}`;
+  }
+  return `${base}/?table=${encodeURIComponent(tableIdOrType)}`;
+}
+
+function generateQrIntoElement(element, text, size = 170) {
+  if (!element) return;
+  element.innerHTML = "";
+  if (typeof QRCode !== "undefined") {
+    try {
+      new QRCode(element, {
+        text: text,
+        width: size,
+        height: size,
+        colorDark: "#140E0C",
+        colorLight: "#FFFFFF",
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    } catch (e) {
+      console.error("QR Code Generation Error:", e);
+      element.innerHTML = `<span style="font-size:0.75rem;color:red;">خطأ في توليد QR</span>`;
+    }
+  } else {
+    element.innerHTML = `<span style="font-size:0.75rem;color:orange;">جاري تحميل مكتبة QR...</span>`;
+  }
+}
+
+function renderQRCodesSection() {
+  const activeBaseUrlEl = document.getElementById("qrActiveBaseUrl");
+  if (activeBaseUrlEl) {
+    activeBaseUrlEl.textContent = getBaseMenuUrl();
+  }
+
+  const wifiSsidInput = document.getElementById("qrWifiSsid");
+  const wifiPassInput = document.getElementById("qrWifiPass");
+  if (wifiSsidInput && settingsData.wifiSsid) wifiSsidInput.value = settingsData.wifiSsid;
+  if (wifiPassInput && typeof settingsData.wifiPass !== "undefined") wifiPassInput.value = settingsData.wifiPass;
+
+  updateLiveTentCard();
+}
+
+function updateLiveTentCard() {
+  const tableInput = document.getElementById("qrTableInput");
+  const titleInput = document.getElementById("qrTableTitleInput");
+  const wifiCheck = document.getElementById("qrIncludeWifi");
+  const wifiSsid = document.getElementById("qrWifiSsid");
+  const wifiPass = document.getElementById("qrWifiPass");
+  const noteInput = document.getElementById("qrCustomNote");
+
+  const tableVal = tableInput ? tableInput.value.trim() : "1";
+  let tableLabel = titleInput ? titleInput.value.trim() : `طاولة رقم ${tableVal}`;
+
+  let targetUrl = "";
+  if (activeQrType === "main-menu") {
+    targetUrl = getTableTargetUrl("main-menu");
+    tableLabel = "المنيو العام • All Menu";
+  } else if (activeQrType === "takeaway") {
+    targetUrl = getTableTargetUrl("takeaway");
+    tableLabel = "طلب سفري • Takeaway / Bar";
+  } else if (activeQrType === "batch") {
+    targetUrl = getTableTargetUrl(tableVal || "1");
+  } else {
+    targetUrl = getTableTargetUrl(tableVal || "1");
+  }
+
+  // Update table pill
+  const pillEl = document.getElementById("tentTableLabel");
+  if (pillEl) pillEl.textContent = tableLabel;
+
+  // Update QR Code
+  const qrHolder = document.getElementById("tentQrHolder");
+  if (qrHolder) {
+    generateQrIntoElement(qrHolder, targetUrl, 170);
+  }
+
+  // Update WiFi
+  const wifiBox = document.getElementById("tentWifiBox");
+  const wifiText = document.getElementById("tentWifiText");
+  const showWifi = wifiCheck ? wifiCheck.checked : true;
+  if (wifiBox) {
+    wifiBox.style.display = showWifi ? "flex" : "none";
+  }
+  if (wifiText && wifiSsid) {
+    const ssid = wifiSsid.value.trim() || "MoKa Cafe Guest";
+    const pass = wifiPass ? wifiPass.value.trim() : "";
+    wifiText.textContent = pass ? `${ssid} • Pass: ${pass}` : `${ssid} (مفتوحة)`;
+  }
+
+  // Update Note
+  const noteEl = document.getElementById("tentNoteText");
+  if (noteEl && noteInput) {
+    noteEl.textContent = noteInput.value.trim() || "نتمنى لكم أوقاتاً ممتعة ولحظات استثنائية ✨";
+  }
+
+  // Update Mini URL
+  const miniUrlEl = document.getElementById("tentUrlMini");
+  if (miniUrlEl) {
+    try {
+      const parsed = new URL(getBaseMenuUrl());
+      miniUrlEl.textContent = parsed.hostname;
+    } catch {
+      miniUrlEl.textContent = getBaseMenuUrl();
+    }
+  }
+}
+
+function generateBatchTableCards() {
+  const fromVal = parseInt(document.getElementById("qrBatchFrom")?.value || "1", 10);
+  const toVal = parseInt(document.getElementById("qrBatchTo")?.value || "12", 10);
+  const wifiCheck = document.getElementById("qrIncludeWifi")?.checked ?? true;
+  const wifiSsid = document.getElementById("qrWifiSsid")?.value.trim() || "MoKa Cafe Guest";
+  const wifiPass = document.getElementById("qrWifiPass")?.value.trim() || "";
+  const noteText = document.getElementById("qrCustomNote")?.value.trim() || "نتمنى لكم أوقاتاً ممتعة ولحظات استثنائية ✨";
+
+  if (isNaN(fromVal) || isNaN(toVal) || fromVal > toVal) {
+    showToast("يرجى إدخال نطاق طاولات صحيح", "error");
+    return;
+  }
+
+  const batchSection = document.getElementById("batchCardsSection");
+  const grid = document.getElementById("batchCardsGrid");
+  if (!batchSection || !grid) return;
+
+  grid.innerHTML = "";
+  batchSection.style.display = "block";
+
+  const miniDomain = (() => {
+    try { return new URL(getBaseMenuUrl()).hostname; } catch { return getBaseMenuUrl(); }
+  })();
+
+  const wifiContent = wifiPass ? `${wifiSsid} • Pass: ${wifiPass}` : `${wifiSsid} (مفتوحة)`;
+
+  for (let i = fromVal; i <= toVal; i++) {
+    const tableId = `batch-qr-t-${i}`;
+    const targetUrl = getTableTargetUrl(String(i));
+
+    const cardDiv = document.createElement("div");
+    cardDiv.className = "table-tent-card";
+    cardDiv.innerHTML = `
+      <div class="tent-card-inner">
+        <div class="tent-header">
+          <div class="tent-logo-wrap">
+            <img src="assets/images/logo.jpg" alt="MoKa Logo" class="tent-logo-img">
+          </div>
+          <h2 class="tent-brand-name">MoKa Cafe</h2>
+          <span class="tent-brand-sub">مـوكـا كـافـيـه — قائمة المشروبات والمأكولات</span>
+        </div>
+        <div class="tent-table-pill">
+          <span class="pill-dot"></span>
+          <span>طاولة رقم ${i} • Table #${i}</span>
+        </div>
+        <div class="tent-qr-box">
+          <div class="tent-qr-canvas-holder" id="${tableId}"></div>
+          <div class="tent-qr-caption">
+            <strong>امسح الكود لطلب القائمة</strong>
+            <span>Scan to Browse Menu &amp; Order</span>
+          </div>
+        </div>
+        ${wifiCheck ? `
+          <div class="tent-wifi-box">
+            <div class="tent-wifi-icon">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
+            </div>
+            <div class="tent-wifi-text">
+              <span class="wifi-label">شبكة الواي فاي مجاناً / Free WiFi:</span>
+              <strong class="wifi-val">${esc(wifiContent)}</strong>
+            </div>
+          </div>
+        ` : ""}
+        <div class="tent-footer">
+          <p class="tent-note">${esc(noteText)}</p>
+          <span class="tent-url-mini">${esc(miniDomain)}</span>
+        </div>
+      </div>
+    `;
+
+    grid.appendChild(cardDiv);
+
+    setTimeout(() => {
+      const qrEl = document.getElementById(tableId);
+      if (qrEl) generateQrIntoElement(qrEl, targetUrl, 160);
+    }, 20);
+  }
+
+  batchSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  showToast(`تم توليد كروت للطاولات من ${fromVal} إلى ${toVal}`);
+}
+
+function openEditBaseUrlModal() {
+  const current = getBaseMenuUrl();
+  showModal("تعديل الرابط الأساسي للـ QR (Domain)", `
+    <div class="form-group">
+      <label class="form-label">الرابط المباشر للمنيو (Base Target URL)</label>
+      <input class="form-input" id="modalMenuBaseUrlInput" value="${esc(current)}" placeholder="https://moka.osamaalmashad.workers.dev" dir="ltr">
+      <small style="display:block; margin-top:6px; color:var(--text-secondary); font-size:0.78rem;">
+        💡 إذا قمت بربط دومين خاص في Cloudflare (مثل https://mokacafe.com)، اكتبه هنا وسيتم توجيه جميع رموز الـ QR إليه تلقائياً دون الحاجة لتغيير الكروت!
+      </small>
+    </div>
+  `, () => {
+    const input = document.getElementById("modalMenuBaseUrlInput");
+    if (!input) return;
+    let val = input.value.trim();
+    if (!val) val = window.location.origin;
+    if (!/^https?:\/\//i.test(val)) val = "https://" + val;
+    settingsData.menuBaseUrl = val;
+    saveSettings();
+    const activeBaseUrlEl = document.getElementById("qrActiveBaseUrl");
+    if (activeBaseUrlEl) activeBaseUrlEl.textContent = val;
+    updateLiveTentCard();
+    hideModal();
+    showToast("تم تحديث الرابط الأساسي وحفظه سحابياً بنجاح");
+  });
+}
+
+function downloadTentCardAsPng() {
+  const qrCanvas = document.querySelector("#tentQrHolder canvas");
+  const qrImg = document.querySelector("#tentQrHolder img");
+
+  if (!qrCanvas && !qrImg) {
+    showToast("جاري إعداد الكود، انتظر ثانية واحدة...", "info");
+    return;
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 800;
+  canvas.height = 1100;
+  const ctx = canvas.getContext("2d");
+
+  // Background
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, 1100);
+  bgGrad.addColorStop(0, "#1C1310");
+  bgGrad.addColorStop(0.5, "#120B09");
+  bgGrad.addColorStop(1, "#0A0605");
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, 800, 1100);
+
+  // Gold Outer Border
+  ctx.strokeStyle = "#D97706";
+  ctx.lineWidth = 8;
+  ctx.strokeRect(20, 20, 760, 1060);
+
+  // Inner Subtle Border
+  ctx.strokeStyle = "rgba(245, 158, 11, 0.4)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(32, 32, 736, 1036);
+
+  // Top Radial Glow
+  const glow = ctx.createRadialGradient(400, 100, 10, 400, 100, 300);
+  glow.addColorStop(0, "rgba(245, 158, 11, 0.25)");
+  glow.addColorStop(1, "transparent");
+  ctx.fillStyle = glow;
+  ctx.fillRect(35, 35, 730, 400);
+
+  // Brand Name
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#FDE68A";
+  ctx.font = "bold 52px serif";
+  ctx.fillText("MoKa Cafe", 400, 150);
+
+  ctx.fillStyle = "#E5E7EB";
+  ctx.font = "bold 26px sans-serif";
+  ctx.fillText("مـوكـا كـافـيـه — قائمة المشروبات والمأكولات", 400, 200);
+
+  // Table Pill
+  const tableTitle = document.getElementById("tentTableLabel")?.textContent || "طاولة رقم 1";
+  ctx.fillStyle = "rgba(217, 119, 6, 0.35)";
+  ctx.beginPath();
+  if (ctx.roundRect) {
+    ctx.roundRect(200, 240, 400, 54, 27);
+  } else {
+    ctx.rect(200, 240, 400, 54);
+  }
+  ctx.fill();
+  ctx.strokeStyle = "#F59E0B";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.fillStyle = "#10B981";
+  ctx.beginPath();
+  ctx.arc(230, 267, 7, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#FDE68A";
+  ctx.font = "bold 26px sans-serif";
+  ctx.fillText(tableTitle, 410, 276);
+
+  // White QR Box
+  ctx.fillStyle = "#FFFFFF";
+  ctx.beginPath();
+  if (ctx.roundRect) {
+    ctx.roundRect(190, 330, 420, 480, 24);
+  } else {
+    ctx.rect(190, 330, 420, 480);
+  }
+  ctx.fill();
+  ctx.strokeStyle = "#D97706";
+  ctx.lineWidth = 6;
+  ctx.stroke();
+
+  // Draw QR
+  const sourceImg = qrCanvas || qrImg;
+  if (sourceImg) {
+    ctx.drawImage(sourceImg, 230, 360, 340, 340);
+  }
+
+  // QR Caption
+  ctx.fillStyle = "#92400E";
+  ctx.font = "bold 28px sans-serif";
+  ctx.fillText("امسح الكود لطلب القائمة", 400, 745);
+
+  ctx.fillStyle = "#4B5563";
+  ctx.font = "600 22px sans-serif";
+  ctx.fillText("Scan to Browse Menu & Order", 400, 780);
+
+  // WiFi Box
+  const showWifi = document.getElementById("qrIncludeWifi")?.checked ?? true;
+  if (showWifi) {
+    const wifiText = document.getElementById("tentWifiText")?.textContent || "";
+    ctx.fillStyle = "rgba(245, 158, 11, 0.15)";
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect(120, 840, 560, 80, 16);
+    } else {
+      ctx.rect(120, 840, 560, 80);
+    }
+    ctx.fill();
+    ctx.strokeStyle = "rgba(245, 158, 11, 0.5)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = "#D1D5DB";
+    ctx.font = "20px sans-serif";
+    ctx.fillText("شبكة الواي فاي مجاناً / Free WiFi:", 400, 872);
+
+    ctx.fillStyle = "#FDE68A";
+    ctx.font = "bold 24px sans-serif";
+    ctx.fillText(wifiText, 400, 904);
+  }
+
+  // Footer Note
+  const note = document.getElementById("tentNoteText")?.textContent || "";
+  ctx.fillStyle = "#E5E7EB";
+  ctx.font = "22px sans-serif";
+  ctx.fillText(note, 400, 970);
+
+  const miniDomain = document.getElementById("tentUrlMini")?.textContent || "";
+  ctx.fillStyle = "rgba(245, 158, 11, 0.85)";
+  ctx.font = "bold 20px monospace";
+  ctx.fillText(miniDomain, 400, 1015);
+
+  // Trigger Download
+  const link = document.createElement("a");
+  const safeName = tableTitle.replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, "_");
+  link.download = `MoKa_QR_${safeName}.png`;
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+  showToast("تم تحميل كارت الطاولة بصيغة PNG عالية الدقة بنجاح 🎨");
+}
+
+function initQRStudio() {
+  document.querySelectorAll(".qr-type-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".qr-type-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      activeQrType = btn.dataset.type;
+
+      const singleConfig = document.getElementById("singleTableConfig");
+      const batchConfig = document.getElementById("batchTableConfig");
+      const tableInput = document.getElementById("qrTableInput");
+      const titleInput = document.getElementById("qrTableTitleInput");
+
+      if (activeQrType === "single-table") {
+        if (singleConfig) singleConfig.style.display = "block";
+        if (batchConfig) batchConfig.style.display = "none";
+        if (titleInput && tableInput) titleInput.value = `طاولة رقم ${tableInput.value || "1"}`;
+      } else if (activeQrType === "main-menu") {
+        if (singleConfig) singleConfig.style.display = "none";
+        if (batchConfig) batchConfig.style.display = "none";
+      } else if (activeQrType === "takeaway") {
+        if (singleConfig) singleConfig.style.display = "none";
+        if (batchConfig) batchConfig.style.display = "none";
+      } else if (activeQrType === "batch") {
+        if (singleConfig) singleConfig.style.display = "none";
+        if (batchConfig) batchConfig.style.display = "block";
+      }
+
+      updateLiveTentCard();
+    });
+  });
+
+  const tableInput = document.getElementById("qrTableInput");
+  const titleInput = document.getElementById("qrTableTitleInput");
+  if (tableInput && titleInput) {
+    tableInput.addEventListener("input", () => {
+      titleInput.value = `طاولة رقم ${tableInput.value.trim()}`;
+      updateLiveTentCard();
+    });
+    titleInput.addEventListener("input", updateLiveTentCard);
+  }
+
+  document.getElementById("qrIncludeWifi")?.addEventListener("change", (e) => {
+    const inputs = document.getElementById("wifiInputsWrap");
+    if (inputs) inputs.style.display = e.target.checked ? "block" : "none";
+    updateLiveTentCard();
+  });
+
+  document.getElementById("qrWifiSsid")?.addEventListener("input", () => {
+    settingsData.wifiSsid = document.getElementById("qrWifiSsid")?.value || "";
+    updateLiveTentCard();
+  });
+
+  document.getElementById("qrWifiPass")?.addEventListener("input", () => {
+    settingsData.wifiPass = document.getElementById("qrWifiPass")?.value || "";
+    updateLiveTentCard();
+  });
+
+  document.getElementById("qrCustomNote")?.addEventListener("input", updateLiveTentCard);
+
+  document.getElementById("generateQrBtn")?.addEventListener("click", () => {
+    if (activeQrType === "batch") {
+      generateBatchTableCards();
+    } else {
+      updateLiveTentCard();
+      showToast("تم تحديث كارت الـ QR بنجاح");
+    }
+  });
+
+  document.getElementById("editBaseUrlBtn")?.addEventListener("click", openEditBaseUrlModal);
+
+  document.getElementById("copyCurrentQrLinkBtn")?.addEventListener("click", () => {
+    const tableVal = document.getElementById("qrTableInput")?.value.trim() || "1";
+    let target = "";
+    if (activeQrType === "main-menu") target = getTableTargetUrl("main-menu");
+    else if (activeQrType === "takeaway") target = getTableTargetUrl("takeaway");
+    else target = getTableTargetUrl(tableVal);
+
+    navigator.clipboard.writeText(target).then(() => {
+      showToast("تم نسخ رابط الـ QR إلى الحافظة 📋");
+    }).catch(() => {
+      prompt("انسخ الرابط التالي:", target);
+    });
+  });
+
+  document.getElementById("printAllTablesBtn")?.addEventListener("click", () => {
+    generateBatchTableCards();
+    setTimeout(() => window.print(), 400);
+  });
+
+  document.getElementById("printBatchGridBtn")?.addEventListener("click", () => {
+    window.print();
+  });
+
+  document.getElementById("downloadSingleCardBtn")?.addEventListener("click", () => {
+    downloadTentCardAsPng();
+  });
+}
+
+// ============================================================================
 // Initialization
 // ============================================================================
 document.addEventListener("DOMContentLoaded", () => {
@@ -1533,6 +2019,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initNavigation();
   initModal();
   initTools();
+  initQRStudio();
 
   // Add buttons
   document.getElementById("addCategoryBtn")?.addEventListener("click", () => openCategoryModal());

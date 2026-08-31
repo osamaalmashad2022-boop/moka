@@ -94,6 +94,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
           العروض الخاصة
         </button>
+        <button class="nav-item" data-section="qrcodes">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="3" height="3"></rect><path d="M7 7h.01"></path><path d="M17 7h.01"></path><path d="M7 17h.01"></path><path d="M17 21v-4h4"></path></svg>
+          رموز QR والطاولات
+        </button>
 
         <div class="nav-divider"></div>
 
@@ -160,6 +164,10 @@
             <button class="quick-action-btn" id="quickAddCatBtn">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
               <span>إضافة قسم</span>
+            </button>
+            <button class="quick-action-btn" id="quickQrBtn">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="3" height="3"></rect><path d="M7 7h.01"></path><path d="M17 7h.01"></path><path d="M7 17h.01"></path><path d="M17 21v-4h4"></path></svg>
+              <span>رموز QR للطاولات</span>
             </button>
             <a href="index.html" target="_blank" class="quick-action-btn secondary">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
@@ -281,6 +289,197 @@
           </div>
         </div>
 
+        <!-- ===== QR CODES & TABLES ===== -->
+        <div class="content-section" id="section-qrcodes">
+          <div class="section-header">
+            <div>
+              <h2 class="section-title-main">رموز QR وطاولات الكافيه 📱</h2>
+              <p class="section-desc-text">توليد وطباعة كروت QR ديناميكية فاخرة للطاولات والمنيو العام مع دعم الواي فاي</p>
+            </div>
+            <div class="qr-header-actions">
+              <button class="btn-primary" id="printAllTablesBtn">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                <span>طباعة جميع الكروت</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Dynamic Base URL Banner -->
+          <div class="qr-domain-banner">
+            <div class="qr-domain-info">
+              <span class="qr-domain-icon">🌐</span>
+              <div>
+                <strong>الرابط الأساسي للـ QR (Dynamic Target):</strong>
+                <span class="qr-domain-url" id="qrActiveBaseUrl">https://moka.osamaalmashad.workers.dev</span>
+              </div>
+            </div>
+            <button class="btn-secondary btn-sm" id="editBaseUrlBtn">تعديل الرابط / الدومين</button>
+          </div>
+
+          <div class="qr-studio-grid">
+            <!-- Controls Column -->
+            <div class="qr-controls-card">
+              <h3 class="qr-card-title">⚙️ إعدادات التوليد</h3>
+
+              <div class="form-group">
+                <label class="form-label">نوع الـ QR</label>
+                <div class="qr-type-selector">
+                  <button type="button" class="qr-type-btn active" data-type="single-table">طاولة محددة</button>
+                  <button type="button" class="qr-type-btn" data-type="main-menu">المنيو العام</button>
+                  <button type="button" class="qr-type-btn" data-type="takeaway">طلب سفري / بار</button>
+                  <button type="button" class="qr-type-btn" data-type="batch">مجموعة طاولات</button>
+                </div>
+              </div>
+
+              <!-- Single Table Settings -->
+              <div id="singleTableConfig">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">رقم / مسمى الطاولة</label>
+                    <input type="text" class="form-input" id="qrTableInput" value="1" placeholder="مثلاً: 1 أو VIP 2">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">المسمى الظاهر بالكارت</label>
+                    <input type="text" class="form-input" id="qrTableTitleInput" value="طاولة رقم 1" placeholder="طاولة رقم 1">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Batch Tables Settings -->
+              <div id="batchTableConfig" style="display:none;">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">من طاولة رقم</label>
+                    <input type="number" class="form-input" id="qrBatchFrom" value="1" min="1">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">إلى طاولة رقم</label>
+                    <input type="number" class="form-input" id="qrBatchTo" value="12" min="1">
+                  </div>
+                </div>
+              </div>
+
+              <!-- WiFi on Card Toggle & Info -->
+              <div class="form-group">
+                <label class="form-checkbox-label">
+                  <input type="checkbox" id="qrIncludeWifi" checked>
+                  <span>إظهار بيانات شبكة الواي فاي (WiFi) على كارت الطاولة</span>
+                </label>
+              </div>
+
+              <div id="wifiInputsWrap">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">اسم الشبكة (SSID)</label>
+                    <input type="text" class="form-input" id="qrWifiSsid" value="MoKa Cafe Guest" placeholder="اسم شبكة الكافيه">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">كلمة المرور (اختياري)</label>
+                    <input type="text" class="form-input" id="qrWifiPass" value="moka2026" placeholder="اتركه فارغاً إن كانت مفتوحة">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Promotional / Welcome Note -->
+              <div class="form-group">
+                <label class="form-label">رسالة ترحيبية أسفل الكارت</label>
+                <input type="text" class="form-input" id="qrCustomNote" value="نتمنى لكم أوقاتاً ممتعة ولحظات استثنائية ✨" placeholder="رسالة ترحيبية للزبائن">
+              </div>
+
+              <div class="qr-action-buttons">
+                <button type="button" class="btn-primary w-100" id="generateQrBtn">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+                  <span>تحديث وتوليد الكروت</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Live Preview Card Column -->
+            <div class="qr-preview-column">
+              <div class="qr-preview-header">
+                <h3 class="qr-card-title">👁️ معاينة الكارت الفاخر</h3>
+                <div class="qr-preview-actions">
+                  <button class="btn-secondary btn-sm" id="copyCurrentQrLinkBtn" title="نسخ رابط الـ QR المباشر">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    <span>نسخ الرابط</span>
+                  </button>
+                  <button class="btn-primary btn-sm" id="downloadSingleCardBtn" title="تحميل الكارت كصورة PNG عالية الجودة">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    <span>تحميل PNG</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- The Actual Luxury Printable Card Element -->
+              <div class="table-tent-card-wrapper">
+                <div class="table-tent-card" id="activeTentCard">
+                  <div class="tent-card-inner">
+                    <!-- Card Header -->
+                    <div class="tent-header">
+                      <div class="tent-logo-wrap">
+                        <img src="assets/images/logo.jpg" alt="MoKa Logo" class="tent-logo-img">
+                      </div>
+                      <h2 class="tent-brand-name">MoKa Cafe</h2>
+                      <span class="tent-brand-sub">مـوكـا كـافـيـه — قائمة المشروبات والمأكولات</span>
+                    </div>
+
+                    <!-- Table Badge -->
+                    <div class="tent-table-pill" id="tentTablePill">
+                      <span class="pill-dot"></span>
+                      <span id="tentTableLabel">طاولة رقم 1 • Table #1</span>
+                    </div>
+
+                    <!-- QR Frame -->
+                    <div class="tent-qr-box">
+                      <div class="tent-qr-canvas-holder" id="tentQrHolder">
+                        <!-- QR rendered here via JS -->
+                      </div>
+                      <div class="tent-qr-caption">
+                        <strong>امسح الكود لطلب القائمة</strong>
+                        <span>Scan to Browse Menu &amp; Order</span>
+                      </div>
+                    </div>
+
+                    <!-- WiFi Info Box (Optional) -->
+                    <div class="tent-wifi-box" id="tentWifiBox">
+                      <div class="tent-wifi-icon">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
+                      </div>
+                      <div class="tent-wifi-text">
+                        <span class="wifi-label">شبكة الواي فاي مجاناً / Free WiFi:</span>
+                        <strong class="wifi-val" id="tentWifiText">MoKa Cafe Guest • Pass: moka2026</strong>
+                      </div>
+                    </div>
+
+                    <!-- Card Footer -->
+                    <div class="tent-footer">
+                      <p class="tent-note" id="tentNoteText">نتمنى لكم أوقاتاً ممتعة ولحظات استثنائية ✨</p>
+                      <span class="tent-url-mini" id="tentUrlMini">moka.osamaalmashad.workers.dev</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Batch Cards Display & Print Sheet Container -->
+          <div class="batch-cards-section" id="batchCardsSection" style="display:none; margin-top:2rem;">
+            <div class="section-header">
+              <div>
+                <h3 class="section-title-main">📋 مجموعة كروت الطاولات الجاهزة</h3>
+                <p class="section-desc-text">يمكنك طباعة كل هذه الكروت مباشرة أو حفظها كملف PDF عالي الجودة</p>
+              </div>
+              <button class="btn-primary" id="printBatchGridBtn">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                <span>طباعة الكروت الآن</span>
+              </button>
+            </div>
+            <div class="batch-cards-grid" id="batchCardsGrid">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </div>
+
         <!-- ===== TOOLS (Export / Import) ===== -->
         <div class="content-section" id="section-tools">
           <div class="section-header">
@@ -345,6 +544,12 @@
       </div>
       <span>العروض</span>
     </button>
+    <button class="mob-nav-btn" data-section="qrcodes">
+      <div class="mob-nav-icon">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="3" height="3"></rect><path d="M7 7h.01"></path><path d="M17 7h.01"></path><path d="M7 17h.01"></path><path d="M17 21v-4h4"></path></svg>
+      </div>
+      <span>QR</span>
+    </button>
     <button class="mob-nav-btn" data-section="settings">
       <div class="mob-nav-icon">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
@@ -380,6 +585,9 @@
 
   <!-- Toast Container -->
   <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Offline Standalone QRCode Engine -->
+  <script src="js/qrcode.min.js"></script>
 
   <!-- Admin Application Logic with Firebase Cloud Sync -->
   <script type="module" src="js/admin.js"></script>

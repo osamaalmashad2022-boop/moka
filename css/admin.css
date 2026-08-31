@@ -1901,3 +1901,438 @@ a {
   font-size: 0.9rem;
   margin-bottom: var(--space-md);
 }
+
+/* ==========================================================================
+   QR Studio & Luxury Table Tent Cards
+   ========================================================================== */
+.qr-header-actions {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.qr-domain-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.12) 0%, rgba(20, 14, 12, 0.6) 100%);
+  border: 1px solid rgba(217, 119, 6, 0.35);
+  border-radius: var(--radius-md);
+  padding: 14px 20px;
+  margin-bottom: var(--space-lg);
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.qr-domain-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.qr-domain-icon {
+  font-size: 1.6rem;
+}
+
+.qr-domain-url {
+  display: block;
+  font-family: monospace;
+  font-size: 0.95rem;
+  color: #F59E0B;
+  font-weight: 700;
+  direction: ltr;
+  text-align: left;
+  margin-top: 2px;
+}
+
+.qr-studio-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-xl);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .qr-studio-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.qr-controls-card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.qr-card-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
+}
+
+.qr-type-selector {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.qr-type-btn {
+  padding: 10px 14px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: center;
+}
+
+.qr-type-btn:hover {
+  border-color: var(--accent-copper);
+  color: var(--text-primary);
+}
+
+.qr-type-btn.active {
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.25) 0%, rgba(180, 83, 9, 0.15) 100%);
+  border-color: var(--accent-copper);
+  color: #FBBF24;
+  font-weight: 700;
+}
+
+.form-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.form-checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent-copper);
+  cursor: pointer;
+}
+
+.qr-preview-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.qr-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.qr-preview-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ==========================================================================
+   Luxury MoKa Table Stand / Tent Card Component
+   ========================================================================== */
+.table-tent-card-wrapper {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.table-tent-card {
+  width: 100%;
+  max-width: 340px;
+  background: linear-gradient(165deg, #1C1310 0%, #120B09 50%, #0A0605 100%);
+  border: 2px solid #D97706;
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(245, 158, 11, 0.4);
+  position: relative;
+  overflow: hidden;
+  color: #F3F4F6;
+  text-align: center;
+  font-family: 'Tajawal', 'Inter', sans-serif;
+}
+
+.table-tent-card::before {
+  content: '';
+  position: absolute;
+  top: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.22) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.tent-card-inner {
+  border: 1px solid rgba(217, 119, 6, 0.3);
+  border-radius: 14px;
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: rgba(18, 11, 9, 0.7);
+  backdrop-filter: blur(8px);
+}
+
+.tent-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.tent-logo-wrap {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  padding: 2px;
+  background: linear-gradient(135deg, #F59E0B, #B45309);
+  box-shadow: 0 4px 15px rgba(217, 119, 6, 0.4);
+  margin-bottom: 2px;
+}
+
+.tent-logo-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+.tent-brand-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #FDE68A;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  margin: 0;
+}
+
+.tent-brand-sub {
+  font-size: 0.72rem;
+  color: #D1D5DB;
+  opacity: 0.9;
+}
+
+.tent-table-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.28) 0%, rgba(180, 83, 9, 0.18) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.6);
+  padding: 5px 14px;
+  border-radius: 20px;
+  color: #FDE68A;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.tent-table-pill .pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 8px #10B981;
+}
+
+.tent-qr-box {
+  background: #FFFFFF;
+  border: 3px solid #D97706;
+  border-radius: 14px;
+  padding: 12px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+  width: 100%;
+  max-width: 220px;
+}
+
+.tent-qr-canvas-holder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 170px;
+  min-height: 170px;
+}
+
+.tent-qr-canvas-holder img,
+.tent-qr-canvas-holder canvas {
+  display: block !important;
+  max-width: 100%;
+  height: auto;
+}
+
+.tent-qr-caption {
+  margin-top: 8px;
+  text-align: center;
+  color: #1F2937;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tent-qr-caption strong {
+  font-size: 0.82rem;
+  color: #92400E;
+  font-weight: 800;
+}
+
+.tent-qr-caption span {
+  font-size: 0.68rem;
+  color: #4B5563;
+  font-weight: 600;
+}
+
+.tent-wifi-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px dashed rgba(245, 158, 11, 0.4);
+  border-radius: 10px;
+  padding: 8px 12px;
+  width: 100%;
+  text-align: start;
+}
+
+.tent-wifi-icon {
+  color: #FBBF24;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.tent-wifi-text {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.75rem;
+  min-width: 0;
+}
+
+.tent-wifi-text .wifi-label {
+  font-size: 0.68rem;
+  color: #D1D5DB;
+}
+
+.tent-wifi-text .wifi-val {
+  color: #FDE68A;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tent-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.tent-note {
+  font-size: 0.72rem;
+  color: #E5E7EB;
+  margin: 0;
+}
+
+.tent-url-mini {
+  font-size: 0.65rem;
+  font-family: monospace;
+  color: rgba(245, 158, 11, 0.8);
+  direction: ltr;
+}
+
+/* Batch Cards Grid Layout */
+.batch-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  justify-items: center;
+}
+
+.batch-cards-grid .table-tent-card {
+  max-width: 100%;
+}
+
+/* ==========================================================================
+   High Quality Print Stylesheet for Table Cards
+   ========================================================================== */
+@media print {
+  body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .login-screen,
+  .admin-sidebar,
+  .admin-header,
+  .mobile-bottom-nav,
+  .mobile-fab-btn,
+  .toast-container,
+  .modal-overlay,
+  .sidebar-overlay,
+  .qr-domain-banner,
+  .qr-controls-card,
+  .qr-header-actions,
+  .qr-preview-header,
+  .quick-actions-bar,
+  #section-dashboard,
+  #section-categories,
+  #section-items,
+  #section-offers,
+  #section-settings,
+  #section-tools {
+    display: none !important;
+  }
+
+  .admin-layout,
+  .admin-main,
+  .admin-content,
+  #section-qrcodes,
+  .batch-cards-section {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    width: 100% !important;
+  }
+
+  .batch-cards-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 15mm !important;
+    padding: 10mm !important;
+  }
+
+  .table-tent-card {
+    box-shadow: none !important;
+    border: 2px solid #D97706 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+

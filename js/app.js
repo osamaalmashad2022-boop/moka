@@ -500,6 +500,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initLanguageToggle();
   initOrderSystem();
   initBackToTop();
+  initTableDetector();
   initSpecialOfferAction();
   initItemModalEvents();
   updateStaticTexts();
@@ -1610,6 +1611,12 @@ function updateStaticTexts() {
   if (searchInput) {
     searchInput.placeholder = texts.searchPlaceholder;
   }
+
+  // Refresh active table banner text for bilingual support
+  const storedTable = sessionStorage.getItem("moka_customer_table");
+  if (storedTable) {
+    applyDetectedTable(storedTable);
+  }
 }
 
 /**
@@ -1672,3 +1679,61 @@ function initBackToTop() {
     });
   });
 }
+
+/**
+ * Dynamic QR Table Auto-Detection
+ */
+function initTableDetector() {
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    let tableParam = urlParams.get("table") || urlParams.get("t") || urlParams.get("tab");
+
+    if (tableParam) {
+      tableParam = decodeURIComponent(tableParam).trim();
+      sessionStorage.setItem("moka_customer_table", tableParam);
+    } else {
+      tableParam = sessionStorage.getItem("moka_customer_table");
+    }
+
+    if (tableParam) {
+      applyDetectedTable(tableParam);
+    }
+
+    const clearBtn = document.getElementById("clearActiveTableBtn");
+    if (clearBtn) {
+      clearBtn.addEventListener("click", () => {
+        sessionStorage.removeItem("moka_customer_table");
+        const banner = document.getElementById("activeTableBanner");
+        if (banner) banner.style.display = "none";
+        const tableInput = document.getElementById("tableNumberInput");
+        if (tableInput) tableInput.value = "";
+        showAppToast(currentLang === "ar" ? "تم إلغاء تثبيت رقم الطاولة" : "Table designation cleared");
+      });
+    }
+  } catch (e) {
+    console.warn("Table detection error:", e);
+  }
+}
+
+function applyDetectedTable(tableParam) {
+  if (!tableParam) return;
+  const isAr = currentLang === "ar";
+  const tableInput = document.getElementById("tableNumberInput");
+  const banner = document.getElementById("activeTableBanner");
+  const bannerText = document.getElementById("activeTableBannerText");
+
+  let formatted = tableParam;
+  if (/^\d+$/.test(tableParam)) {
+    formatted = isAr ? `طاولة رقم ${tableParam}` : `Table #${tableParam}`;
+  }
+
+  if (tableInput) {
+    tableInput.value = formatted;
+  }
+
+  if (banner && bannerText) {
+    banner.style.display = "block";
+    bannerText.textContent = isAr ? `📍 متصل بـ: ${formatted}` : `📍 Connected to: ${formatted}`;
+  }
+}
+
