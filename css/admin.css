@@ -552,32 +552,6 @@ a {
   transform: scale(0.95);
 }
 
-.header-logout-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: var(--radius-full);
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  color: var(--accent-red);
-  font-size: 0.82rem;
-  font-weight: 700;
-  cursor: pointer;
-  width: auto;
-  transition: all var(--transition-fast);
-}
-
-.header-logout-btn:hover {
-  background: rgba(239, 68, 68, 0.18);
-  border-color: var(--accent-red);
-  transform: scale(1.02);
-}
-
-.header-logout-btn:active {
-  transform: scale(0.95);
-}
-
 /* ==========================================================================
    CONTENT SECTIONS & DASHBOARD
    ========================================================================== */
