@@ -294,12 +294,12 @@
           <div class="section-header">
             <div>
               <h2 class="section-title-main">رموز QR وطاولات الكافيه 📱</h2>
-              <p class="section-desc-text">توليد وطباعة كروت QR ديناميكية فاخرة للطاولات والمنيو العام مع دعم الواي فاي</p>
+              <p class="section-desc-text">توليد وتصدير كروت QR ديناميكية فاخرة للطاولات كصور عالية الدقة (PNG/ZIP) للمطابع والاستخدام المباشر</p>
             </div>
             <div class="qr-header-actions">
-              <button class="btn-primary" id="printAllTablesBtn">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                <span>طباعة جميع الكروت</span>
+              <button class="btn-primary" id="downloadAllTablesZipBtn" title="تنزيل جميع كروت الطاولات في ملف مضغوط ZIP عالي الدقة">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>تنزيل جميع الكروت (ZIP)</span>
               </button>
             </div>
           </div>
@@ -341,7 +341,7 @@
 
               <!-- Batch Generation Range (Optional) -->
               <div class="form-group" style="margin-top: 12px; padding-top: 14px; border-top: 1px dashed rgba(217, 119, 6, 0.3);">
-                <label class="form-label">توليد مجموعة طاولات دفعة واحدة (طباعة جماعية)</label>
+                <label class="form-label">توليد نطاق طاولات محدد (عرض وتنزيل بالجملة)</label>
                 <div class="form-row">
                   <div class="form-group">
                     <label class="form-label" style="font-size:0.78rem;">من طاولة رقم</label>
@@ -361,7 +361,7 @@
                 </button>
                 <button type="button" class="btn-secondary w-100" id="generateBatchBtn" style="margin-top: 8px;">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-                  <span>توليد كروت المجموعة (طباعة)</span>
+                  <span>توليد مجموعة الكروت (عرض وتنزيل)</span>
                 </button>
               </div>
             </div>
@@ -423,17 +423,23 @@
             </div>
           </div>
 
-          <!-- Batch Cards Display & Print Sheet Container -->
+          <!-- Batch Cards Display & Download Container -->
           <div class="batch-cards-section" id="batchCardsSection" style="display:none; margin-top:2rem;">
             <div class="section-header">
               <div>
                 <h3 class="section-title-main">📋 مجموعة كروت الطاولات الجاهزة</h3>
-                <p class="section-desc-text">يمكنك طباعة كل هذه الكروت مباشرة أو حفظها كملف PDF عالي الجودة</p>
+                <p class="section-desc-text">يمكنك تنزيل كل كارت كصورة عالية الدقة منفرداً أو تنزيل جميع الكروت معاً في ملف مضغوط ZIP</p>
               </div>
-              <button class="btn-primary" id="printBatchGridBtn">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                <span>طباعة الكروت الآن</span>
-              </button>
+              <div class="batch-header-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button class="btn-primary" id="downloadBatchZipBtn" title="تنزيل جميع كروت الطاولات في ملف ZIP مضغوط">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  <span>تحميل المجموعة كاملة (ZIP)</span>
+                </button>
+                <button class="btn-secondary" id="downloadBatchSeqBtn" title="تنزيل كل كروت المجموعة كصور PNG منفصلة تتابعياً">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                  <span>تنزيل الصور تتابعياً</span>
+                </button>
+              </div>
             </div>
             <div class="batch-cards-grid" id="batchCardsGrid">
               <!-- Rendered dynamically -->
@@ -549,6 +555,9 @@
 
   <!-- Offline Standalone QRCode Engine -->
   <script src="js/qrcode.min.js"></script>
+
+  <!-- Offline Standalone JSZip Engine for Bulk Image Downloads -->
+  <script src="js/jszip.min.js"></script>
 
   <!-- Admin Application Logic with Firebase Cloud Sync -->
   <script type="module" src="js/admin.js"></script>

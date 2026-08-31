@@ -2232,12 +2232,47 @@ a {
 .batch-cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+  gap: 24px;
   justify-items: center;
 }
 
-.batch-cards-grid .table-tent-card {
-  max-width: 100%;
+.batch-card-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 290px;
+  transition: transform 0.25s ease;
+}
+
+.batch-card-wrapper:hover {
+  transform: translateY(-4px);
+}
+
+.batch-card-wrapper .table-tent-card {
+  width: 100%;
+  margin: 0;
+}
+
+.tent-card-actions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  justify-content: center;
+}
+
+.tent-card-actions .btn-sm {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 0.76rem;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 /* ==========================================================================

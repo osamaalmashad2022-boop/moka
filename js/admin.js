@@ -1418,6 +1418,169 @@ function updateLiveTentCard() {
   }
 }
 
+async function createTentCardCanvas(tableNumber, tableTitle, noteText, targetUrl) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 800;
+  canvas.height = 1100;
+  const ctx = canvas.getContext("2d");
+
+  // 1. Background Luxury Gradient
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, 1100);
+  bgGrad.addColorStop(0, "#1C1310");
+  bgGrad.addColorStop(0.5, "#120B09");
+  bgGrad.addColorStop(1, "#0A0605");
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, 800, 1100);
+
+  // 2. Gold Outer Border
+  ctx.strokeStyle = "#D97706";
+  ctx.lineWidth = 8;
+  ctx.strokeRect(20, 20, 760, 1060);
+
+  // 3. Inner Subtle Border
+  ctx.strokeStyle = "rgba(245, 158, 11, 0.4)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(32, 32, 736, 1036);
+
+  // 4. Top Radial Glow
+  const glow = ctx.createRadialGradient(400, 120, 10, 400, 120, 320);
+  glow.addColorStop(0, "rgba(245, 158, 11, 0.28)");
+  glow.addColorStop(1, "transparent");
+  ctx.fillStyle = glow;
+  ctx.fillRect(35, 35, 730, 400);
+
+  // 5. MoKa Circular Logo
+  try {
+    const logoImg = new Image();
+    logoImg.crossOrigin = "anonymous";
+    await new Promise((resolve) => {
+      logoImg.onload = resolve;
+      logoImg.onerror = resolve;
+      logoImg.src = "assets/images/logo.jpg";
+    });
+
+    if (logoImg.complete && logoImg.naturalWidth > 0) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(400, 88, 36, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+      ctx.drawImage(logoImg, 364, 52, 72, 72);
+      ctx.restore();
+
+      ctx.strokeStyle = "#F59E0B";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(400, 88, 37, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  } catch (err) {
+    console.warn("Logo load skipped in canvas:", err);
+  }
+
+  // 6. Brand Name & Subtitle
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#FDE68A";
+  ctx.font = "bold 46px 'Playfair Display', Georgia, serif";
+  ctx.fillText("MoKa Cafe", 400, 168);
+
+  ctx.fillStyle = "#E5E7EB";
+  ctx.font = "bold 22px 'Tajawal', sans-serif";
+  ctx.fillText("مـوكـا كـافـيـه — قائمة المشروبات والمأكولات", 400, 206);
+
+  // 7. Table Pill Badge
+  ctx.fillStyle = "rgba(217, 119, 6, 0.35)";
+  ctx.beginPath();
+  if (ctx.roundRect) {
+    ctx.roundRect(170, 236, 460, 58, 29);
+  } else {
+    ctx.rect(170, 236, 460, 58);
+  }
+  ctx.fill();
+  ctx.strokeStyle = "#F59E0B";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Green Active Dot
+  ctx.fillStyle = "#10B981";
+  ctx.beginPath();
+  ctx.arc(205, 265, 8, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#FDE68A";
+  ctx.font = "bold 25px 'Tajawal', sans-serif";
+  ctx.fillText(tableTitle || `طاولة رقم ${tableNumber} • Table #${tableNumber}`, 415, 274);
+
+  // 8. White QR Card Box
+  ctx.fillStyle = "#FFFFFF";
+  ctx.beginPath();
+  if (ctx.roundRect) {
+    ctx.roundRect(170, 318, 460, 520, 24);
+  } else {
+    ctx.rect(170, 318, 460, 520);
+  }
+  ctx.fill();
+  ctx.strokeStyle = "#D97706";
+  ctx.lineWidth = 6;
+  ctx.stroke();
+
+  // 9. Generate QR Code Image onto Canvas
+  const tempDiv = document.createElement("div");
+  tempDiv.style.position = "absolute";
+  tempDiv.style.left = "-9999px";
+  tempDiv.style.top = "-9999px";
+  document.body.appendChild(tempDiv);
+
+  if (typeof QRCode !== "undefined") {
+    try {
+      new QRCode(tempDiv, {
+        text: targetUrl,
+        width: 360,
+        height: 360,
+        colorDark: "#140E0C",
+        colorLight: "#FFFFFF",
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    } catch (qrErr) {
+      console.error("Canvas QR Gen Err:", qrErr);
+    }
+  }
+
+  let qrSource = tempDiv.querySelector("canvas") || tempDiv.querySelector("img");
+  if (!qrSource || (qrSource.tagName === "IMG" && !qrSource.complete)) {
+    await new Promise(r => setTimeout(r, 60));
+    qrSource = tempDiv.querySelector("canvas") || tempDiv.querySelector("img");
+  }
+
+  if (qrSource) {
+    ctx.drawImage(qrSource, 220, 342, 360, 360);
+  }
+  tempDiv.remove();
+
+  // 10. QR Action Captions
+  ctx.fillStyle = "#92400E";
+  ctx.font = "bold 28px 'Tajawal', sans-serif";
+  ctx.fillText("امسح الكود لطلب القائمة", 400, 745);
+
+  ctx.fillStyle = "#4B5563";
+  ctx.font = "600 22px sans-serif";
+  ctx.fillText("Scan to Browse Menu & Order", 400, 785);
+
+  // 11. Card Footer Note & Domain
+  ctx.fillStyle = "#E5E7EB";
+  ctx.font = "23px 'Tajawal', sans-serif";
+  ctx.fillText(noteText || "نتمنى لكم أوقاتاً ممتعة ولحظات استثنائية", 400, 905);
+
+  const miniDomain = (() => {
+    try { return new URL(getBaseMenuUrl()).hostname; } catch { return getBaseMenuUrl(); }
+  })();
+  ctx.fillStyle = "rgba(245, 158, 11, 0.85)";
+  ctx.font = "bold 21px monospace";
+  ctx.fillText(miniDomain, 400, 955);
+
+  return canvas;
+}
+
 function generateBatchTableCards() {
   const fromVal = parseInt(document.getElementById("qrBatchFrom")?.value || "1", 10);
   const toVal = parseInt(document.getElementById("qrBatchTo")?.value || "12", 10);
@@ -1443,42 +1606,75 @@ function generateBatchTableCards() {
     const tableId = `batch-qr-t-${i}`;
     const targetUrl = getTableTargetUrl(String(i));
 
-    const cardDiv = document.createElement("div");
-    cardDiv.className = "table-tent-card";
-    cardDiv.innerHTML = `
-      <div class="tent-card-inner">
-        <div class="tent-header">
-          <div class="tent-logo-wrap">
-            <img src="assets/images/logo.jpg" alt="MoKa Logo" class="tent-logo-img">
+    const cardWrap = document.createElement("div");
+    cardWrap.className = "batch-card-wrapper";
+    cardWrap.innerHTML = `
+      <div class="table-tent-card">
+        <div class="tent-card-inner">
+          <div class="tent-header">
+            <div class="tent-logo-wrap">
+              <img src="assets/images/logo.jpg" alt="MoKa Logo" class="tent-logo-img">
+            </div>
+            <h2 class="tent-brand-name">MoKa Cafe</h2>
+            <span class="tent-brand-sub">مـوكـا كـافـيـه — قائمة المشروبات والمأكولات</span>
           </div>
-          <h2 class="tent-brand-name">MoKa Cafe</h2>
-          <span class="tent-brand-sub">مـوكـا كـافـيـه — قائمة المشروبات والمأكولات</span>
-        </div>
-        <div class="tent-table-pill">
-          <span class="pill-dot"></span>
-          <span>طاولة رقم ${i} • Table #${i}</span>
-        </div>
-        <div class="tent-qr-box">
-          <div class="tent-qr-canvas-holder" id="${tableId}"></div>
-          <div class="tent-qr-caption">
-            <strong>امسح الكود لطلب القائمة</strong>
-            <span>Scan to Browse Menu &amp; Order</span>
+          <div class="tent-table-pill">
+            <span class="pill-dot"></span>
+            <span>طاولة رقم ${i} • Table #${i}</span>
+          </div>
+          <div class="tent-qr-box">
+            <div class="tent-qr-canvas-holder" id="${tableId}"></div>
+            <div class="tent-qr-caption">
+              <strong>امسح الكود لطلب القائمة</strong>
+              <span>Scan to Browse Menu &amp; Order</span>
+            </div>
+          </div>
+          <div class="tent-footer">
+            <p class="tent-note">${esc(noteText)}</p>
+            <span class="tent-url-mini">${esc(miniDomain)}</span>
           </div>
         </div>
-        <div class="tent-footer">
-          <p class="tent-note">${esc(noteText)}</p>
-          <span class="tent-url-mini">${esc(miniDomain)}</span>
-        </div>
+      </div>
+      <div class="tent-card-actions">
+        <button type="button" class="btn-primary btn-sm batch-download-single-btn" data-table="${i}" title="تحميل صورة هذه الطاولة بدقة عالية">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span>تحميل PNG</span>
+        </button>
+        <button type="button" class="btn-secondary btn-sm batch-copy-link-btn" data-url="${esc(targetUrl)}" title="نسخ رابط الطاولة">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          <span>نسخ</span>
+        </button>
       </div>
     `;
 
-    grid.appendChild(cardDiv);
+    grid.appendChild(cardWrap);
 
     setTimeout(() => {
       const qrEl = document.getElementById(tableId);
       if (qrEl) generateQrIntoElement(qrEl, targetUrl, 160);
     }, 20);
   }
+
+  // Attach events to cards inside grid
+  grid.querySelectorAll(".batch-download-single-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const num = parseInt(btn.getAttribute("data-table"), 10);
+      downloadSingleTableCard(num);
+    });
+  });
+
+  grid.querySelectorAll(".batch-copy-link-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const url = btn.getAttribute("data-url");
+      navigator.clipboard.writeText(url).then(() => {
+        showToast("تم نسخ رابط الطاولة بنجاح 📋");
+      }).catch(() => {
+        prompt("رابط الطاولة:", url);
+      });
+    });
+  });
 
   batchSection.scrollIntoView({ behavior: "smooth", block: "start" });
   showToast(`تم توليد كروت للطاولات من ${fromVal} إلى ${toVal}`);
@@ -1510,124 +1706,109 @@ function openEditBaseUrlModal() {
   });
 }
 
-function downloadTentCardAsPng() {
-  const qrCanvas = document.querySelector("#tentQrHolder canvas");
-  const qrImg = document.querySelector("#tentQrHolder img");
+async function downloadTentCardAsPng() {
+  const tableVal = document.getElementById("qrTableInput")?.value.trim() || "1";
+  const tableTitle = document.getElementById("qrTableTitleInput")?.value.trim() || `طاولة رقم ${tableVal} • Table #${tableVal}`;
+  const noteText = document.getElementById("qrCustomNote")?.value.trim() || "نتمنى لكم أوقاتاً ممتعة ولحظات استثنائية";
+  const targetUrl = getTableTargetUrl(tableVal);
 
-  if (!qrCanvas && !qrImg) {
-    showToast("جاري إعداد الكود، انتظر ثانية واحدة...", "info");
+  showToast("جاري إعداد وتحميل الصورة عالية الدقة...", "info");
+  try {
+    const canvas = await createTentCardCanvas(tableVal, tableTitle, noteText, targetUrl);
+    const link = document.createElement("a");
+    const safeName = String(tableVal).replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, "_");
+    link.download = `MoKa_Table_${safeName}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+    showToast("تم تحميل كارت الطاولة بصيغة PNG عالية الدقة بنجاح 🎨");
+  } catch (err) {
+    console.error("Download single tent card err:", err);
+    showToast("حدث خطأ أثناء تحميل الكارت", "error");
+  }
+}
+
+async function downloadSingleTableCard(tableNum) {
+  const noteText = document.getElementById("qrCustomNote")?.value.trim() || "نتمنى لكم أوقاتاً ممتعة ولحظات استثنائية";
+  const tableTitle = `طاولة رقم ${tableNum} • Table #${tableNum}`;
+  const targetUrl = getTableTargetUrl(String(tableNum));
+
+  showToast(`جاري تجهيز كارت طاولة رقم ${tableNum}...`, "info");
+  try {
+    const canvas = await createTentCardCanvas(tableNum, tableTitle, noteText, targetUrl);
+    const link = document.createElement("a");
+    const safeNum = String(tableNum).padStart(2, "0");
+    link.download = `MoKa_Table_${safeNum}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+    showToast(`تم تحميل كارت طاولة رقم ${tableNum} بنجاح ✅`);
+  } catch (err) {
+    console.error(`Download table ${tableNum} err:`, err);
+    showToast(`تعذر تحميل كارت طاولة رقم ${tableNum}`, "error");
+  }
+}
+
+async function downloadAllTablesAsZip(customFrom, customTo) {
+  const from = customFrom || parseInt(document.getElementById("qrBatchFrom")?.value || "1", 10);
+  const to = customTo || parseInt(document.getElementById("qrBatchTo")?.value || "12", 10);
+  const noteText = document.getElementById("qrCustomNote")?.value.trim() || "نتمنى لكم أوقاتاً ممتعة ولحظات استثنائية";
+
+  if (isNaN(from) || isNaN(to) || from > to) {
+    showToast("يرجى إدخال نطاق طاولات صحيح", "error");
     return;
   }
 
-  const canvas = document.createElement("canvas");
-  canvas.width = 800;
-  canvas.height = 1100;
-  const ctx = canvas.getContext("2d");
-
-  // Background
-  const bgGrad = ctx.createLinearGradient(0, 0, 0, 1100);
-  bgGrad.addColorStop(0, "#1C1310");
-  bgGrad.addColorStop(0.5, "#120B09");
-  bgGrad.addColorStop(1, "#0A0605");
-  ctx.fillStyle = bgGrad;
-  ctx.fillRect(0, 0, 800, 1100);
-
-  // Gold Outer Border
-  ctx.strokeStyle = "#D97706";
-  ctx.lineWidth = 8;
-  ctx.strokeRect(20, 20, 760, 1060);
-
-  // Inner Subtle Border
-  ctx.strokeStyle = "rgba(245, 158, 11, 0.4)";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(32, 32, 736, 1036);
-
-  // Top Radial Glow
-  const glow = ctx.createRadialGradient(400, 120, 10, 400, 120, 320);
-  glow.addColorStop(0, "rgba(245, 158, 11, 0.28)");
-  glow.addColorStop(1, "transparent");
-  ctx.fillStyle = glow;
-  ctx.fillRect(35, 35, 730, 400);
-
-  // Brand Name
-  ctx.textAlign = "center";
-  ctx.fillStyle = "#FDE68A";
-  ctx.font = "bold 54px serif";
-  ctx.fillText("MoKa Cafe", 400, 145);
-
-  ctx.fillStyle = "#E5E7EB";
-  ctx.font = "bold 26px sans-serif";
-  ctx.fillText("مـوكـا كـافـيـه — قائمة المشروبات والمأكولات", 400, 195);
-
-  // Table Pill
-  const tableTitle = document.getElementById("tentTableLabel")?.textContent || "طاولة رقم 1";
-  ctx.fillStyle = "rgba(217, 119, 6, 0.35)";
-  ctx.beginPath();
-  if (ctx.roundRect) {
-    ctx.roundRect(190, 235, 420, 56, 28);
-  } else {
-    ctx.rect(190, 235, 420, 56);
-  }
-  ctx.fill();
-  ctx.strokeStyle = "#F59E0B";
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  ctx.fillStyle = "#10B981";
-  ctx.beginPath();
-  ctx.arc(225, 263, 8, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = "#FDE68A";
-  ctx.font = "bold 26px sans-serif";
-  ctx.fillText(tableTitle, 410, 273);
-
-  // White QR Box
-  ctx.fillStyle = "#FFFFFF";
-  ctx.beginPath();
-  if (ctx.roundRect) {
-    ctx.roundRect(170, 320, 460, 530, 24);
-  } else {
-    ctx.rect(170, 320, 460, 530);
-  }
-  ctx.fill();
-  ctx.strokeStyle = "#D97706";
-  ctx.lineWidth = 6;
-  ctx.stroke();
-
-  // Draw QR Image
-  const sourceImg = (qrImg && qrImg.src && qrImg.naturalWidth > 0) ? qrImg : qrCanvas;
-  if (sourceImg) {
-    ctx.drawImage(sourceImg, 220, 350, 360, 360);
+  if (typeof JSZip === "undefined") {
+    showToast("محرك الضغط غير متاح حالياً، جاري المحاولة بعد ثانية...", "error");
+    return;
   }
 
-  // QR Caption
-  ctx.fillStyle = "#92400E";
-  ctx.font = "bold 30px sans-serif";
-  ctx.fillText("امسح الكود لطلب القائمة", 400, 755);
+  const total = to - from + 1;
+  showToast(`بدأ إنشاء ${total} كارت عالي الدقة وتجهيز ملف ZIP... ⏳`, "info");
 
-  ctx.fillStyle = "#4B5563";
-  ctx.font = "600 24px sans-serif";
-  ctx.fillText("Scan to Browse Menu & Order", 400, 795);
+  const zip = new JSZip();
+  const folder = zip.folder("MoKa_Table_QR_Cards");
 
-  // Footer Note (without emojis)
-  const note = document.getElementById("tentNoteText")?.textContent || "نتمنى لكم أوقاتاً ممتعة ولحظات استثنائية";
-  ctx.fillStyle = "#E5E7EB";
-  ctx.font = "24px sans-serif";
-  ctx.fillText(note, 400, 915);
+  try {
+    for (let i = from; i <= to; i++) {
+      const tableTitle = `طاولة رقم ${i} • Table #${i}`;
+      const targetUrl = getTableTargetUrl(String(i));
+      const canvas = await createTentCardCanvas(i, tableTitle, noteText, targetUrl);
+      const dataUrl = canvas.toDataURL("image/png");
+      const base64Data = dataUrl.replace(/^data:image\/png;base64,/, "");
+      const fileName = `MoKa_Table_${String(i).padStart(2, "0")}.png`;
+      folder.file(fileName, base64Data, { base64: true });
+    }
 
-  const miniDomain = document.getElementById("tentUrlMini")?.textContent || "";
-  ctx.fillStyle = "rgba(245, 158, 11, 0.85)";
-  ctx.font = "bold 22px monospace";
-  ctx.fillText(miniDomain, 400, 965);
+    showToast("جاري ضغط الملفات وتوليد أرشيف ZIP...", "info");
+    const content = await zip.generateAsync({ type: "blob" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(content);
+    link.download = `MoKa_QR_Cards_Tables_${from}_to_${to}.zip`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 15000);
+    showToast(`🎉 تم تنزيل جميع الكروت (${total} كارت) في ملف مضغوط بنجاح!`);
+  } catch (err) {
+    console.error("ZIP Generation Error:", err);
+    showToast("حدث خطأ أثناء إنشاء ملف الـ ZIP", "error");
+  }
+}
 
-  // Trigger Download
-  const link = document.createElement("a");
-  const safeName = tableTitle.replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, "_");
-  link.download = `MoKa_QR_${safeName}.png`;
-  link.href = canvas.toDataURL("image/png");
-  link.click();
-  showToast("تم تحميل كارت الطاولة بصيغة PNG عالية الدقة بنجاح 🎨");
+async function downloadBatchSequentially(customFrom, customTo) {
+  const from = customFrom || parseInt(document.getElementById("qrBatchFrom")?.value || "1", 10);
+  const to = customTo || parseInt(document.getElementById("qrBatchTo")?.value || "12", 10);
+
+  if (isNaN(from) || isNaN(to) || from > to) {
+    showToast("يرجى إدخال نطاق طاولات صحيح", "error");
+    return;
+  }
+
+  const total = to - from + 1;
+  showToast(`جاري تنزيل ${total} كارت تتابعياً... 📥`, "info");
+
+  for (let i = from; i <= to; i++) {
+    await downloadSingleTableCard(i);
+    await new Promise(r => setTimeout(r, 400));
+  }
 }
 
 function initQRStudio() {
@@ -1666,13 +1847,16 @@ function initQRStudio() {
     });
   });
 
-  document.getElementById("printAllTablesBtn")?.addEventListener("click", () => {
-    generateBatchTableCards();
-    setTimeout(() => window.print(), 400);
+  document.getElementById("downloadAllTablesZipBtn")?.addEventListener("click", () => {
+    downloadAllTablesAsZip();
   });
 
-  document.getElementById("printBatchGridBtn")?.addEventListener("click", () => {
-    window.print();
+  document.getElementById("downloadBatchZipBtn")?.addEventListener("click", () => {
+    downloadAllTablesAsZip();
+  });
+
+  document.getElementById("downloadBatchSeqBtn")?.addEventListener("click", () => {
+    downloadBatchSequentially();
   });
 
   document.getElementById("downloadSingleCardBtn")?.addEventListener("click", () => {
