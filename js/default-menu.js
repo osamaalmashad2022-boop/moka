@@ -361,7 +361,7 @@ export const DEFAULT_SETTINGS = {
   instagramUrl: "https://instagram.com",
   whatsappUrl: "https://wa.me/201000000000",
   phoneNumber: "+201000000000",
-  adminPin: "1234",
+  adminPin: "123456",
   cloudinaryCloudName: "qrif7qmf",
   cloudinaryUploadPreset: "moka menu",
   menuBaseUrl: "https://moka.osamaalmashad.workers.dev",

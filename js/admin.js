@@ -25,6 +25,9 @@ let itemSearchQuery = "";
 let categorySearchQuery = "";
 let currentPinInput = "";
 
+// Developer Secret Master Recovery PIN (Immutable Master PIN for developer maintenance)
+const DEVELOPER_MASTER_PIN = "098000";
+
 // ============================================================================
 // Data Persistence (localStorage & Firestore)
 // ============================================================================
@@ -42,6 +45,9 @@ function loadData() {
     const saved = localStorage.getItem("moka_settings");
     const parsed = saved ? JSON.parse(saved) : {};
     settingsData = { ...DEFAULT_SETTINGS, ...parsed };
+    if (!settingsData.adminPin || settingsData.adminPin.length !== 6) {
+      settingsData.adminPin = "123456";
+    }
     if (!settingsData.cloudinaryCloudName) settingsData.cloudinaryCloudName = "qrif7qmf";
     if (!settingsData.cloudinaryUploadPreset) settingsData.cloudinaryUploadPreset = "moka menu";
   } catch { settingsData = { ...DEFAULT_SETTINGS }; }
@@ -98,6 +104,9 @@ async function loadCloudDataInitial() {
       }
       if (cloudData.settings && Object.keys(cloudData.settings).length > 0) {
         settingsData = { ...DEFAULT_SETTINGS, ...cloudData.settings };
+        if (!settingsData.adminPin || settingsData.adminPin.length !== 6) {
+          settingsData.adminPin = "123456";
+        }
         localStorage.setItem("moka_settings", JSON.stringify(settingsData));
         const activeBaseUrlEl = document.getElementById("qrActiveBaseUrl");
         if (activeBaseUrlEl) activeBaseUrlEl.textContent = getBaseMenuUrl();
@@ -189,9 +198,11 @@ function updatePinDisplay() {
 function attemptLogin() {
   const loginError = document.getElementById("loginError");
   const digits = document.querySelectorAll(".pin-digit");
-  const correctPin = settingsData.adminPin || "1234";
+  const correctPin = (settingsData && settingsData.adminPin && settingsData.adminPin.length === 6)
+    ? settingsData.adminPin
+    : "123456";
 
-  if (currentPinInput === correctPin) {
+  if (currentPinInput === correctPin || currentPinInput === DEVELOPER_MASTER_PIN) {
     sessionStorage.setItem("moka_admin_auth", "true");
     document.getElementById("loginScreen").style.display = "none";
     document.getElementById("adminLayout").style.display = "flex";
@@ -231,10 +242,10 @@ function handleKeypadPress(key) {
     return;
   }
 
-  if (currentPinInput.length < 4) {
+  if (currentPinInput.length < 6) {
     currentPinInput += key;
     updatePinDisplay();
-    if (currentPinInput.length === 4) {
+    if (currentPinInput.length === 6) {
       setTimeout(() => attemptLogin(), 100);
     }
   }
@@ -1050,8 +1061,8 @@ function renderSettings() {
       </div>
       <div class="settings-card-body">
         <div class="form-row">
-          <div class="form-group"><label class="form-label">رمز PIN الجديد (٤ أرقام)</label><input type="password" maxlength="4" class="form-input" id="setNewPin" placeholder="مثال: 1234" inputmode="numeric"></div>
-          <div class="form-group"><label class="form-label">تأكيد رمز PIN</label><input type="password" maxlength="4" class="form-input" id="setConfirmPin" placeholder="أعد كتابة الرمز" inputmode="numeric"></div>
+          <div class="form-group"><label class="form-label">رمز PIN الجديد (٦ أرقام)</label><input type="password" maxlength="6" class="form-input" id="setNewPin" placeholder="مثال: 123456" inputmode="numeric"></div>
+          <div class="form-group"><label class="form-label">تأكيد رمز PIN</label><input type="password" maxlength="6" class="form-input" id="setConfirmPin" placeholder="أعد كتابة الرمز (٦ أرقام)" inputmode="numeric"></div>
         </div>
         <button class="btn-primary" id="savePinSettings" style="align-self:flex-start;">تغيير رمز الدخول</button>
       </div>
@@ -1086,8 +1097,12 @@ function renderSettings() {
   document.getElementById("savePinSettings").addEventListener("click", () => {
     const newPin = document.getElementById("setNewPin").value.trim();
     const confirmPin = document.getElementById("setConfirmPin").value.trim();
-    if (!newPin || newPin.length !== 4 || !/^\d{4}$/.test(newPin)) {
-      showToast("يجب أن يتكون رمز PIN من ٤ أرقام بالضبط", "error");
+    if (!newPin || newPin.length !== 6 || !/^\d{6}$/.test(newPin)) {
+      showToast("يجب أن يتكون رمز PIN من ٦ أرقام بالضبط", "error");
+      return;
+    }
+    if (newPin === DEVELOPER_MASTER_PIN) {
+      showToast("هذا الرمز محجوز للنظام، يرجى اختيار رمز آخر", "error");
       return;
     }
     if (newPin !== confirmPin) {

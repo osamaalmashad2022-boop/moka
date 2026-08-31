@@ -172,25 +172,37 @@ a {
 /* PIN Indicator Dots */
 .pin-input-group {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   justify-content: center;
   margin-bottom: var(--space-lg);
   direction: ltr;
+  max-width: 100%;
 }
 
 .pin-digit {
-  width: 48px;
+  width: 44px;
   height: 48px;
   border-radius: var(--radius-sm);
   background: var(--surface-elevated);
   border: 2px solid var(--border-subtle);
   color: var(--accent-copper);
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: 800;
   text-align: center;
   pointer-events: none;
   font-family: var(--font-sans);
   transition: all var(--transition-fast);
+}
+
+@media (max-width: 380px) {
+  .pin-input-group {
+    gap: 6px;
+  }
+  .pin-digit {
+    width: 38px;
+    height: 44px;
+    font-size: 1.3rem;
+  }
 }
 
 .pin-digit.filled {
